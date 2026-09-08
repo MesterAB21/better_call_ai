@@ -525,7 +525,7 @@ export default function AppChat() {
               <div className="conv-empty">
                 <div className="conv-empty-hero">
                   <div className="conv-empty-logo">
-                    <BalanceLoader gentle />
+                    <BalanceLoader gentle timeScale={3} />
                   </div>
                   <h2 className="conv-empty-title">Bonjour, quelle est votre situation aujourd&rsquo;hui&nbsp;?</h2>
                   <p className="conv-empty-sub">Analyse juridique instantanée, claire, et basée sur le droit algérien.</p>
