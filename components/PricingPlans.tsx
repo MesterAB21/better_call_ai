@@ -31,14 +31,14 @@ const plans: Plan[] = [
     ],
   },
   {
-    name: "Professionnel",
-    monthly: 1900,
+    name: "Plus",
+    monthly: 3999,
     period: "DA / mois",
     desc: "Pour les avocats indépendants et les particuliers exigeants",
     featured: true,
     tag: "Populaire",
     features: [
-      "Usage étendu",
+      "750 000 tokens / jour",
       "Mode Recherche Approfondie",
       "Export PDF / Word",
       "Dossiers illimités",
@@ -47,12 +47,13 @@ const plans: Plan[] = [
     ],
   },
   {
-    name: "Cabinet",
-    monthly: 3900,
-    period: "DA / utilisateur / mois",
+    name: "Pro",
+    monthly: 5999,
+    period: "DA / mois",
     desc: "Pour les cabinets et les PME",
     features: [
-      "Tout le plan Professionnel",
+      "Tout le plan Plus",
+      "Tokens illimités",
       "Sièges multiples",
       "Facturation centralisée",
       "Dossiers partagés en équipe",
@@ -102,8 +103,8 @@ export default function PricingPlans() {
   const startCheckout = async (displayName: string) => {
     const slugMap: Record<string, string> = {
       "Découverte": "free",
-      "Professionnel": "plus",
-      "Cabinet": "pro",
+      "Plus": "plus",
+      "Pro": "pro",
     };
     const apiPlan = apiPlans.find((p) => p.name === slugMap[displayName]);
     if (!apiPlan) return;
@@ -126,8 +127,8 @@ export default function PricingPlans() {
   const getPlanPrice = (displayName: string): string => {
     const nameMap: Record<string, string> = {
       "Découverte": "free",
-      "Professionnel": "plus",
-      "Cabinet": "pro",
+      "Plus": "plus",
+      "Pro": "pro",
     };
     const apiPlan = apiPlans.find((p) => p.name === nameMap[displayName]);
     if (!apiPlan) {

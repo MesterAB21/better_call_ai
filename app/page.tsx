@@ -63,8 +63,8 @@ const testimonials = [
 
 const plans = [
   { name: "Découverte", price: "0 DA", note: "Pour essayer", features: ["Questions limitées/jour", "Mode Standard", "Sans historique long terme"] },
-  { name: "Professionnel", price: "1 900 DA", note: "/mois", featured: true, features: ["Usage étendu", "Recherche Approfondie", "Export PDF / Word", "Dossiers illimités"] },
-  { name: "Cabinet", price: "3 900 DA", note: "/utilisateur /mois", features: ["Sièges multiples", "Facturation centralisée", "Dossiers partagés", "Réponses prioritaires"] },
+  { name: "Plus", price: "3 999 DA", note: "/mois", featured: true, features: ["750 000 tokens / jour", "Recherche Approfondie", "Export PDF / Word", "Dossiers illimités"] },
+  { name: "Pro", price: "5 999 DA", note: "/mois", features: ["Tokens illimités", "Sièges multiples", "Dossiers partagés en équipe", "Réponses prioritaires"] },
 ];
 
 export default function Home() {
