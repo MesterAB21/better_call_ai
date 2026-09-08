@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { plansApi, paymentsApi, authApi, type Plan as ApiPlan } from "@/lib/api";
+import { plansApi, paymentsApi, authApi, ApiError, type Plan as ApiPlan } from "@/lib/api";
 
 type Plan = {
   name: string;
@@ -112,9 +112,11 @@ export default function PricingPlans() {
     try {
       const res = await paymentsApi.checkout(apiPlan.id, billing);
       window.location.assign(res.checkout_url);
-    } catch {
+    } catch (e) {
       setCheckoutError(
-        "Impossible de démarrer le paiement. Réessayez dans un instant."
+        e instanceof ApiError
+          ? `Le paiement n'a pas pu démarrer : ${e.detail}`
+          : "Impossible de démarrer le paiement. Réessayez dans un instant."
       );
       setCheckingOut(null);
     }
