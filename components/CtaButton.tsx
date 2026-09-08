@@ -20,13 +20,15 @@ export default function CtaButton({ href }: { href: string }) {
       data-magnetic
       aria-label="Ouvrir l'application Better Call AI"
     >
-      <ShaderButtons
-        variant="ignition-button"
-        mode={theme}
-        hue={tone.hue}
-        saturation={tone.saturation}
-        brightness={tone.brightness}
-      />
+      <span className="shader-frame-inner" aria-hidden="true">
+        <ShaderButtons
+          variant="ignition-button"
+          mode={theme}
+          hue={tone.hue}
+          saturation={tone.saturation}
+          brightness={tone.brightness}
+        />
+      </span>
     </Link>
   );
 }
