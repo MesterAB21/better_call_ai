@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Bell, Clock, Info, LogOut, Menu, PanelLeftClose, Plus, Search, Send, X, Zap,
+  Bell, Check, Clock, Info, LogOut, Menu, PanelLeftClose, Pencil, Plus, Search, Send, X, Zap,
 } from "lucide-react";
 import Wordmark from "@/components/Wordmark";
 import { ThemeToggle } from "@/components/ThemeProvider";
@@ -35,6 +35,11 @@ export default function AppChat() {
   const [limitDismissed, setLimitDismissed] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [sidebarSearch, setSidebarSearch] = useState("");
+  // Server-side search results (title + message content). Null = no active search.
+  const [searchResults, setSearchResults] = useState<Conversation[] | null>(null);
+  // Inline rename state for a sidebar item
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
 
   // Sidebar: drawer is collapsed by default on narrow screens; open on wide.
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -85,6 +90,22 @@ export default function AppChat() {
       if (list.length > 0) setActiveId(list[0].id);
     }).catch(() => {});
   }, []);
+
+  // Server-side search: searches titles AND message content. Debounced so it
+  // only fires once the user stops typing. When the field is cleared the
+  // reset happens in the onChange handler (not this effect) to keep effects
+  // synchronous-setState-free.
+  useEffect(() => {
+    const term = sidebarSearch.trim();
+    if (!term) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      conversationsApi.list({ search: term, limit: 50 })
+        .then((list) => { if (!cancelled) setSearchResults(list); })
+        .catch(() => { if (!cancelled) setSearchResults([]); });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [sidebarSearch]);
 
   // Load the latest page of messages when the active conversation changes
   useEffect(() => {
@@ -316,9 +337,34 @@ export default function AppChat() {
   const resetLabel = usage.quotaLimitExceededAt && usage.quotaResetHours
     ? formatReset(usage.quotaLimitExceededAt, usage.quotaResetHours) : "";
 
-  const filteredConvs = conversations.filter((c) =>
-    (c.title ?? "").toLowerCase().includes(sidebarSearch.toLowerCase())
-  );
+  const startRename = useCallback((conv: Conversation) => {
+    setRenamingId(conv.id);
+    setRenameDraft(conv.title ?? "");
+  }, []);
+
+  const submitRename = useCallback(async () => {
+    if (!renamingId) return;
+    const id = renamingId;
+    const title = renameDraft.trim();
+    setRenamingId(null);
+    try {
+      await conversationsApi.update(id, { title });
+      const apply = (c: Conversation) => (c.id === id ? { ...c, title: title || null } : c);
+      setConversations((prev) => prev.map(apply));
+      setSearchResults((prev) => prev ? prev.map(apply) : prev);
+    } catch {
+      // keep the old title visible on failure
+    }
+  }, [renamingId, renameDraft]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingId(null);
+    setRenameDraft("");
+  }, []);
+
+  // Use live search results when the user typed something; otherwise the
+  // full conversation list (already client-side stable after loading).
+  const filteredConvs = searchResults ?? conversations;
   const activeConv = conversations.find((c) => c.id === activeId);
 
   return (
@@ -343,19 +389,50 @@ export default function AppChat() {
         <div className="sidebar-search">
           <span className="sidebar-search-icon"><Search size={16} strokeWidth={1.75} /></span>
           <input type="search" placeholder="Rechercher" aria-label="Rechercher"
-            value={sidebarSearch} onChange={(e) => setSidebarSearch(e.target.value)} />
+            value={sidebarSearch} onChange={(e) => { setSidebarSearch(e.target.value); if (!e.target.value.trim()) setSearchResults(null); }} />
         </div>
 
         <div className="sidebar-list">
-          {filteredConvs.map((conv) => (
-            <button key={conv.id}
-              className={`sidebar-item${conv.id === activeId ? " active" : ""}`}
-              type="button"
-              onClick={() => { setMessages([]); setActiveId(conv.id); if (isMobile) setSidebarOpen(false); }}
-              style={{ textAlign: "left", width: "100%", background: "none", border: "none", cursor: "pointer" }}>
-              <span className="sidebar-item-title">{conv.title ?? "Nouvelle consultation"}</span>
-            </button>
-          ))}
+          {filteredConvs.map((conv) =>
+            renamingId === conv.id ? (
+              <form key={conv.id} className="sidebar-item sidebar-rename-form"
+                onSubmit={(e) => { e.preventDefault(); submitRename(); }}
+                onBlur={submitRename}>
+                <input
+                  className="sidebar-rename-input"
+                  type="text"
+                  value={renameDraft}
+                  autoFocus
+                  placeholder="Nom de la conversation"
+                  onChange={(e) => setRenameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") { e.stopPropagation(); cancelRename(); }
+                  }}
+                />
+                <button className="rename-confirm-btn" type="submit" aria-label="Valider le nom"
+                  title="Enregistrer">
+                  <Check size={14} strokeWidth={1.75} />
+                </button>
+              </form>
+            ) : (
+              <div key={conv.id}
+                className={`sidebar-item${conv.id === activeId ? " active" : ""}`}
+                role="button" tabIndex={0}
+                onClick={() => { setMessages([]); setActiveId(conv.id); if (isMobile) setSidebarOpen(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setMessages([]); setActiveId(conv.id); if (isMobile) setSidebarOpen(false);
+                  }
+                }}>
+                <span className="sidebar-item-title">{conv.title ?? "Nouvelle consultation"}</span>
+                <button className="sidebar-rename-btn" type="button" aria-label="Renommer"
+                  title="Renommer" onClick={(e) => { e.stopPropagation(); startRename(conv); }}>
+                  <Pencil size={13} strokeWidth={1.75} />
+                </button>
+              </div>
+            )
+          )}
           {filteredConvs.length === 0 && (
             <p style={{ padding: "8px 12px", opacity: 0.5, fontSize: 13 }}>Aucune conversation</p>
           )}

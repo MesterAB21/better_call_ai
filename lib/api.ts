@@ -139,7 +139,13 @@ export function summarizeTitle(content: string, maxWords = 6): string {
 }
 
 export const conversationsApi = {
-  list: () => request<Conversation[]>("/conversations/"),
+  list: (opts?: { search?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (opts?.search) params.set("search", opts.search);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    const qs = params.toString();
+    return request<Conversation[]>(`/conversations/${qs ? `?${qs}` : ""}`);
+  },
   create: (title?: string) =>
     request<Conversation>("/conversations/", { method: "POST", body: { title } }),
   get: (id: string) => request<Conversation>(`/conversations/${id}`),
