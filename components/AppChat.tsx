@@ -168,6 +168,35 @@ export default function AppChat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
 
+  // A reload while the consultation is still running leaves a dangling user
+  // message (no assistant reply yet). The backend keeps generating in the
+  // background; poll until the persisted answer lands, then refresh the page.
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (!activeId || last?.role !== "user" || sendingRef.current) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      try {
+        const list = await conversationsApi.messages(activeId, {
+          limit: MESSAGES_PAGE,
+        });
+        if (cancelled) return;
+        if (list.length > 0 && list[list.length - 1]?.role === "assistant") {
+          setMessages(list);
+          setHasMore(list.length === MESSAGES_PAGE);
+          return;
+        }
+      } catch {}
+      if (!cancelled) timer = setTimeout(poll, 3000);
+    };
+    timer = setTimeout(poll, 2000);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [activeId, messages]);
+
   const createNewConversation = useCallback(() => {
     // Frontend-only draft: no backend row is created until the user sends
     // their first message. Repeated/rapid clicks reuse the same draft.
@@ -372,6 +401,8 @@ export default function AppChat() {
   const showLimitModal = isLimitReached && !limitDismissed;
   const resetLabel = usage.quotaLimitExceededAt && usage.quotaResetHours
     ? formatReset(usage.quotaLimitExceededAt, usage.quotaResetHours) : "";
+  const lastMessage = messages[messages.length - 1];
+  const pendingReply = !!lastMessage && lastMessage.role === "user" && !sending;
 
   const startRename = useCallback((conv: Conversation) => {
     setRenamingId(conv.id);
@@ -598,6 +629,13 @@ export default function AppChat() {
                 </div>
               )
             )}
+            {pendingReply && (
+                <div className="msg msg-ai" key="pending-reply">
+                  <div className="ai-body">
+                    <span className="ai-pending">Consultation en cours…</span>
+                  </div>
+                </div>
+              )}
             <div ref={bottomRef} />
           </div>
         </div>

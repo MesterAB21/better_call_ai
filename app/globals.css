@@ -2077,6 +2077,26 @@ html.lenis body {
   font-weight: 500;
   margin-top: var(--space-xxs);
 }
+.ai-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.ai-pending::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold-primary);
+  animation: ai-pending-pulse 1.4s ease-in-out infinite;
+}
+@keyframes ai-pending-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
 .citation-chip {
   display: inline-flex;
   align-items: center;
