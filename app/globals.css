@@ -494,15 +494,10 @@ html.lenis body {
   align-items: center;
   justify-content: center;
 }
-/* Loading spinner shown in the transition overlay while the next route mounts */
-.page-transition-spinner {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 3px solid var(--hairline);
-  border-top-color: var(--gold-primary);
-  animation: agent-spin 0.8s linear infinite;
-  filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.25));
+/* Balance-scale loader shown in the transition overlay while the next route mounts */
+.page-transition .balance-scale {
+  width: 72px;
+  filter: drop-shadow(0 0 22px rgba(212, 175, 55, 0.25));
 }
 
 /* ============ THEME TOGGLE ============ */
@@ -2066,10 +2061,6 @@ html.lenis body {
 }
 .agent-row--error .agent-row-title { color: var(--alert-clay); }
 .agent-row-check { color: var(--success-jade); }
-.agent-row-spinner {
-  color: var(--gold-bright);
-  animation: agent-spin 1s linear infinite;
-}
 /* Active step blinks like the "Consultation en cours" loader */
 .agent-row--running.agent-row--blink .agent-row-title {
   color: var(--gold-bright);
@@ -2080,7 +2071,6 @@ html.lenis body {
   0%, 60%, 100% { opacity: 1; }
   30% { opacity: 0.35; }
 }
-@keyframes agent-spin { to { transform: rotate(360deg); } }
 .ai-error {
   color: var(--alert-clay);
   font-size: 13px;
@@ -3124,7 +3114,6 @@ html.lenis body {
   background: var(--bg-surface);
   border-color: var(--gold-deep);
 }
-[data-theme='light'] .agent-row-spinner,
 [data-theme='light'] .agent-row--running.agent-row--blink .agent-row-title {
   color: var(--gold-deep);
 }

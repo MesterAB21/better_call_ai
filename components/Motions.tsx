@@ -88,14 +88,29 @@ export default function Motions() {
       });
     }
 
-    // ---- page transition overlay (route wipe + loading spinner) ----
+    // ---- page transition overlay (route wipe + balance-scale loader) ----
     const overlay = document.createElement("div");
     overlay.className = "page-transition";
     overlay.setAttribute("aria-hidden", "true");
-    const spinner = document.createElement("div");
-    spinner.className = "page-transition-spinner";
-    overlay.appendChild(spinner);
+    overlay.innerHTML =
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;color:var(--text-muted);font-family:var(--font-montserrat);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;">' +
+      '<svg viewBox="0 0 500 400" class="balance-scale" role="presentation" aria-hidden="true">' +
+      '<g><ellipse cx="250" cy="365" rx="85" ry="16" fill="#8a6125"/><circle cx="250" cy="115" r="18" fill="#8a6125"/><circle cx="250" cy="115" r="9" fill="#d4af37"/><circle cx="250" cy="115" r="4" fill="#fff8e7"/></g>' +
+      '<g class="page-transition-beam"><path d="M 70 115 C 130 102,200 108,250 115 C 300 108,370 102,430 115 C 370 122,300 122,250 115 C 200 122,130 122,70 115 Z" fill="#d4af37"/>' +
+      '<g class="page-transition-pan"><g stroke="#d4af37" stroke-width="1.8" opacity="0.85" stroke-dasharray="3,2"><line x1="70" y1="115" x2="20" y2="235"/><line x1="70" y1="115" x2="70" y2="235"/><line x1="70" y1="115" x2="120" y2="235"/></g><path d="M 15 235 C 15 265,125 265,125 235 Z" fill="#b88f28"/></g>' +
+      '<g class="page-transition-pan"><g stroke="#b88f28" stroke-width="1.8" opacity="0.85" stroke-dasharray="3,2"><line x1="430" y1="115" x2="380" y2="235"/><line x1="430" y1="115" x2="430" y2="235"/><line x1="430" y1="115" x2="480" y2="235"/></g><path d="M 375 235 C 375 265,485 265,485 235 Z" fill="#b88f28"/></g>' +
+      "</g></svg><span>Chargement</span></div>";
     document.body.appendChild(overlay);
+    const beam = overlay.querySelector<SVGGElement>(".page-transition-beam");
+    const pans = overlay.querySelectorAll<SVGGElement>(".page-transition-pan");
+    if (beam && pans.length === 2) {
+      gsap
+        .timeline({ repeat: -1, yoyo: true })
+        .to(beam, { rotation: -4, svgOrigin: "250 115", duration: 1.6, ease: "sine.inOut" }, 0)
+        .to(pans[0], { rotation: 4, svgOrigin: "70 115", duration: 1.6, ease: "sine.inOut" }, 0)
+        .to(pans[1], { rotation: 4, svgOrigin: "430 115", duration: 1.6, ease: "sine.inOut" }, 0);
+    }
+
     // Reveal the freshly navigated page. Bound before the click handler so it
     // stays available even after `router.push`, once the new route commits.
     const reveal = () => {

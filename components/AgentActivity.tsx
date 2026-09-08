@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, CircleAlert, Loader2 } from "lucide-react";
+import { Check, CircleAlert } from "lucide-react";
+import BalanceLoader from "@/components/BalanceLoader";
 import type { AgentActivityItem } from "@/lib/api";
 
 /**
@@ -32,7 +33,7 @@ function ActivityIcon({ status }: { status: AgentActivityItem["status"] }) {
   if (status === "error") {
     return <CircleAlert size={14} className="agent-row-error" />;
   }
-  return <Loader2 size={13} className="agent-row-spinner" />;
+  return <BalanceLoader compact />;
 }
 
 function ActivityList({ activities }: { activities: AgentActivityItem[] }) {
