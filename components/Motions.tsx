@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Lenis from "lenis";
@@ -16,6 +16,9 @@ gsap.registerPlugin(ScrollTrigger);
  */
 export default function Motions() {
   const router = useRouter();
+  const pathname = usePathname();
+  const revealRef = useRef<(() => void) | null>(null);
+  const lastPathRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -85,10 +88,38 @@ export default function Motions() {
       });
     }
 
-    // ---- page transition overlay (route wipe) ----
+    // ---- page transition overlay (route wipe + loading spinner) ----
     const overlay = document.createElement("div");
     overlay.className = "page-transition";
+    overlay.setAttribute("aria-hidden", "true");
+    const spinner = document.createElement("div");
+    spinner.className = "page-transition-spinner";
+    overlay.appendChild(spinner);
     document.body.appendChild(overlay);
+    // Reveal the freshly navigated page. Bound before the click handler so it
+    // stays available even after `router.push`, once the new route commits.
+    const reveal = () => {
+      if (!overlay.isConnected) return;
+      gsap.to(overlay, {
+        scaleY: 0,
+        duration: 0.6,
+        ease: "power4.inOut",
+        transformOrigin: "top",
+        onComplete: () => {
+          try {
+            lenis.start();
+          } catch {
+            /* already destroyed during unmount */
+          }
+        },
+      });
+      try {
+        ScrollTrigger.refresh();
+      } catch {
+        /* noop */
+      }
+    };
+    revealRef.current = reveal;
     const onClick = (e: MouseEvent) => {
       if (
         e.defaultPrevented ||
@@ -117,6 +148,20 @@ export default function Motions() {
       const url = new URL(anchor.href, window.location.origin);
       if (url.origin !== window.location.origin) return;
       if (anchor.getAttribute("target") === "_blank") return;
+
+      // Same-page navigation (e.g. /#fonctionnement or /#tarifs): smooth-scroll
+      // to the section instead of running the route wipe (which would leave the
+      // overlay covering the page for a hash-only change of the same route).
+      if (url.pathname === window.location.pathname) {
+        if (url.hash) {
+          e.preventDefault();
+          e.stopPropagation();
+          lenis.scrollTo(url.hash);
+          window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+        }
+        return;
+      }
+
       e.preventDefault();
       e.stopPropagation();
       lenis.stop();
@@ -286,6 +331,11 @@ export default function Motions() {
     }, document.documentElement);
 
     cleanups.push(() => {
+      try {
+        revealRef.current = null;
+      } catch {
+        /* noop */
+      }
       ctx.revert();
       ScrollTrigger.killAll();
     });
@@ -300,6 +350,19 @@ export default function Motions() {
       });
     };
   }, [router]);
+
+  // Once the router commits a different route, roll the transition overlay
+  // back off and re-enable smooth scroll (see `reveal` in the effect above).
+  useEffect(() => {
+    if (lastPathRef.current === null) {
+      lastPathRef.current = pathname;
+      return;
+    }
+    if (lastPathRef.current !== pathname) {
+      lastPathRef.current = pathname;
+      revealRef.current?.();
+    }
+  }, [pathname]);
 
   return null;
 }

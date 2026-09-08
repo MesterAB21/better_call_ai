@@ -9,7 +9,6 @@ import {
 import Wordmark from "@/components/Wordmark";
 import { ThemeToggle } from "@/components/ThemeProvider";
 import BalanceLoader from "@/components/BalanceLoader";
-import AgentActivity from "@/components/AgentActivity";
 import AiBody from "@/components/AiBody";
 import Markdown from "@/components/Markdown";
 import QuestionnaireCard from "@/components/QuestionnaireCard";
@@ -66,6 +65,7 @@ export default function AppChat() {
   const [assistantActivities, setAssistantActivities] = useState<AgentActivityItem[]>([]);
   const [streamingText, setStreamingText] = useState("");
   const [assistantError, setAssistantError] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const assistantActivitiesRef = useRef<AgentActivityItem[]>([]);
   const streamingTextRef = useRef("");
 
@@ -176,6 +176,13 @@ export default function AppChat() {
     setActiveId(null);
   }, []);
 
+  const SUGGESTIONS = [
+    "Régulariser une construction sans permis",
+    "Créer une SARL en Algérie",
+    "Litige avec un locataire",
+    "Droits de succession",
+  ];
+
   const performSend = useCallback(async (text: string) => {
     // Limit already reached: never even touch the backend again (blocks
     // sending even right after the usage state resets on a page refresh).
@@ -186,6 +193,7 @@ export default function AppChat() {
     const content = text.trim();
     if (!content || sending) return;
     setInputText("");
+    setSendError(null);
     setSending(true);
     sendingRef.current = true;
     setStreamingKey(null);
@@ -285,9 +293,22 @@ export default function AppChat() {
         void refreshUsage();
         return;
       }
-      // Any other failure: keep the optimistic rows and show an error note on
-      // the assistant side. The backend now persists the user's message plus
-      // an error note, so nothing is lost after a refresh either.
+      // Any other failure. When nothing was generated yet (agent unreachable /
+      // timeout), roll the optimistic rows back and restore the text into the
+      // composer with a single inline error — no ghost user/assistant rows, so
+      // repeated failures don't produce duplicated messages on screen.
+      const hadPartial =
+        streamingTextRef.current.trim().length > 0 || assistantActivitiesRef.current.length > 0;
+      if (!hadPartial) {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId && m.id !== tempAiId));
+        setInputText(content);
+        setSendError(
+          error instanceof ApiError
+            ? error.detail
+            : "Le service de consultation ne répond pas. Veuillez réessayer."
+        );
+        return;
+      }
       setAssistantError(true);
       setMessages((prev) =>
         prev.map((m) =>
@@ -502,10 +523,24 @@ export default function AppChat() {
             )}
             {messages.length === 0 && !sending && (
               <div className="conv-empty">
-                <BalanceLoader compact static />
-                {!activeId && (
-                  <p>Décrivez la situation juridique sur laquelle vous souhaitez être conseillé.</p>
-                )}
+                <div className="conv-empty-hero">
+                  <div className="conv-empty-logo">
+                    <BalanceLoader gentle />
+                  </div>
+                  <h2 className="conv-empty-title">Bonjour, quelle est votre situation aujourd&rsquo;hui&nbsp;?</h2>
+                  <p className="conv-empty-sub">Analyse juridique instantanée, claire, et basée sur le droit algérien.</p>
+                  <div className="conv-suggestions">
+                    {SUGGESTIONS.map((s) => (
+                      <button key={s} type="button" className="conv-suggestion"
+                        onClick={() => {
+                          if (sending || limitReachedRef.current) { setInputText(s); return; }
+                          performSend(s);
+                        }}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             {messages.map((m) =>
@@ -535,9 +570,6 @@ export default function AppChat() {
                           {m.id.startsWith("temp-ai") && assistantError && (
                             <p className="ai-error">L&rsquo;exécution a été interrompue.</p>
                           )}
-                          {m.activities && m.activities.length > 0 && (
-                            <AgentActivity activities={m.activities} />
-                          )}
                         </div>
                       );
                     })()}
@@ -560,6 +592,17 @@ export default function AppChat() {
               Limite atteinte{resetLabel && <> — revenez à <strong>{resetLabel}</strong></>}, ou{" "}
               <Link href="/pricing" className="limit-banner-link">passez à Pro</Link>.
             </span>
+          </div>
+        )}
+
+        {sendError && (
+          <div className="send-error-banner" role="alert">
+            <Info size={14} strokeWidth={1.75} />
+            <span>{sendError}</span>
+            <button className="send-error-close" type="button" aria-label="Fermer"
+              title="Fermer" onClick={() => setSendError(null)}>
+              <X size={14} strokeWidth={1.75} />
+            </button>
           </div>
         )}
 

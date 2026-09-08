@@ -64,34 +64,50 @@
   --text-on-gold: #201A12;
   --grad-cta: linear-gradient(135deg, #C2A97F 0%, #A08A68 100%);
   --grad-pro-glow: linear-gradient(135deg, #C2A97F 0%, #A08A68 55%, #7A6650 100%);
+
+  /* Single accent (alias of the gold family) */
+  --accent: #A08A68;
+  /* Message bubbles */
+  --bubble-user-bg: #272220;
+  --bubble-user-border: #3A342E;
+  --shadow-bubble: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 /* ============ LIGHT MODE ============ */
 [data-theme='light'] {
   color-scheme: light;
 
-  --bg-canvas: #F2EAD9;
-  --bg-surface: #ECE2CC;
-  --bg-surface-elevated: #FBF8F1;
-  --hairline: #D6CEBC;
+  /* Hierarchy (#F7F3EC page → #EFE8DA sidebar → white surfaces/bubbles) */
+  --bg-canvas: #F7F3EC;
+  --bg-surface: #EFE8DA;
+  --bg-surface-elevated: #FFFFFF;
 
-  --text-ink: #2A2420;
-  --text-body: #52483F;
-  --text-muted: #8B8377;
+  --hairline: #E0D8C8;
+  --hairline-soft: rgba(201, 168, 118, 0.26);
 
-  --gold-primary: #C9A24B;
-  --gold-bright: #D9BC7A;
-  --gold-deep: #A5874D;
-  --silver-primary: #75787C;
-  --silver-soft: #9B9D9F;
+  /* Contrast: warm near-black primary, brown-grey secondary */
+  --text-ink: #2B2620;
+  --text-body: #4A4034;
+  --text-muted: #6B6152;
+
+  /* One accent tone, reused for every primary action & active state */
+  --accent: #C9A876;
+  --gold-primary: #C9A876;
+  --gold-bright: #D8C08F;
+  --gold-deep: #8F6B2F;
+  --silver-primary: #6E6A62;
+  --silver-soft: #8E897F;
   --success-jade: #4F8568;
-  --alert-clay: #B15A3E;
-
-  --hairline-soft: rgba(201, 162, 75, 0.22);
+  --alert-clay: #B34A28;
 
   --text-on-gold: #241C12;
-  --grad-cta: linear-gradient(135deg, #D9BC7A 0%, #C9A24B 100%);
-  --grad-pro-glow: linear-gradient(135deg, #E8CE93 0%, #C9A24B 55%, #A5874D 100%);
+  --grad-cta: linear-gradient(135deg, #D8C08F 0%, #C9A876 100%);
+  --grad-pro-glow: linear-gradient(135deg, #E4D0A4 0%, #C9A876 55%, #A98B5C 100%);
+
+  /* Message bubbles */
+  --bubble-user-bg: #FDFBF7;
+  --bubble-user-border: #E0D8C8;
+  --shadow-bubble: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 /* ============ BASE ============ */
@@ -474,6 +490,19 @@ html.lenis body {
   transform-origin: top;
   z-index: 9999;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Loading spinner shown in the transition overlay while the next route mounts */
+.page-transition-spinner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--hairline);
+  border-top-color: var(--gold-primary);
+  animation: agent-spin 0.8s linear infinite;
+  filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.25));
 }
 
 /* ============ THEME TOGGLE ============ */
@@ -1090,7 +1119,7 @@ html.lenis body {
   transition: color var(--dur-micro) ease, background var(--dur-micro) ease;
 }
 .sidebar-collapse-btn:hover {
-  color: var(--text-ink);
+  color: var(--gold-primary);
   background: var(--bg-surface-elevated);
 }
 .sidebar-brand a {
@@ -1255,8 +1284,9 @@ html.lenis body {
   color: var(--text-ink);
 }
 .sidebar-item.active {
-  background: var(--bg-surface-elevated);
+  background: color-mix(in srgb, var(--gold-primary) 18%, var(--bg-surface));
   color: var(--text-ink);
+  font-weight: 500;
 }
 .sidebar-item .dot {
   width: 6px;
@@ -1277,7 +1307,7 @@ html.lenis body {
   transition: color var(--dur-micro) ease, background var(--dur-micro) ease;
 }
 .sidebar-settings-btn:hover {
-  color: var(--text-ink);
+  color: var(--gold-primary);
   background: var(--bg-surface-elevated);
 }
 /* Settings + theme toggle read as one control cluster */
@@ -1314,13 +1344,19 @@ html.lenis body {
   gap: var(--space-xs);
   padding: 7px 8px;
   border-radius: var(--radius-sm);
-  background: var(--grad-pro-glow);
-  color: #201A12;
+  /* Same accent as the primary action buttons, so "Passer à Pro" reads as
+     the same visual role as "Nouvelle discussion". */
+  background: var(--gold-primary);
+  color: var(--text-on-gold);
   font-size: 12px;
   font-weight: 600;
   text-decoration: none;
   position: relative;
   overflow: hidden;
+  transition: background var(--dur-micro) ease;
+}
+.pro-badge:hover {
+  background: var(--gold-bright);
 }
 .pro-badge::after {
   content: '';
@@ -1583,7 +1619,7 @@ html.lenis body {
   transition: color var(--dur-micro) ease, background var(--dur-micro) ease;
 }
 .topbar-icon-btn:hover {
-  color: var(--text-ink);
+  color: var(--gold-primary);
   background: var(--bg-surface-elevated);
 }
 .notif-dot {
@@ -1641,6 +1677,7 @@ html.lenis body {
   mask-image: linear-gradient(to top, transparent 0, #000 40px);
 }
 .conv-inner {
+  flex: 1;
   max-width: 760px;
   width: 100%;
   margin: 0 auto;
@@ -1649,17 +1686,85 @@ html.lenis body {
   gap: var(--space-lg);
 }
 .conv-empty {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-md);
-  padding: var(--space-xxl) var(--space-md);
+  padding: var(--space-xl) var(--space-md);
   text-align: center;
   color: var(--text-muted);
 }
 .conv-empty p {
   margin: 0;
+}
+.conv-empty-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 520px;
+}
+.conv-empty-logo {
+  width: 96px;
+  height: 96px;
+  margin-bottom: var(--space-lg);
+}
+.conv-empty-logo .balance-scale {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 28px rgba(212, 175, 55, 0.3));
+}
+.conv-empty-title {
+  margin: 0;
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text-ink);
+}
+.conv-empty-sub {
+  margin: var(--space-sm) 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.conv-suggestions {
+  margin-top: var(--space-xl);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  width: 100%;
+}
+.conv-suggestion {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: all var(--dur-micro) var(--ease-out-expo);
+}
+.conv-suggestion:hover {
+  border-color: var(--gold-primary);
+  background: linear-gradient(rgba(160, 138, 104, 0.08), rgba(160, 138, 104, 0.08)), var(--bg-surface-elevated);
+  color: var(--text-ink);
+}
+.conv-suggestion:focus-visible {
+  outline: 2px solid var(--gold-primary);
+  outline-offset: 2px;
+}
+@media (max-width: 560px) {
+  .conv-suggestions {
+    grid-template-columns: 1fr;
+  }
+  .conv-empty-logo {
+    width: 76px;
+    height: 76px;
+  }
 }
 .history-loading {
   display: flex;
@@ -1824,7 +1929,9 @@ html.lenis body {
   max-width: 72%;
 }
 .msg-user .msg-bubble {
-  background: var(--bg-surface-elevated);
+  background: var(--bubble-user-bg);
+  border: 1px solid var(--bubble-user-border);
+  box-shadow: var(--shadow-bubble);
   color: var(--text-ink);
   padding: 12px 16px;
   border-radius: var(--radius-lg);
@@ -1977,6 +2084,7 @@ html.lenis body {
 .ai-error {
   color: var(--alert-clay);
   font-size: 13px;
+  font-weight: 500;
   margin-top: var(--space-xxs);
 }
 .citation-chip {
@@ -2956,4 +3064,70 @@ html.lenis body {
   line-height: 1.625;
   letter-spacing: 0.05em;
   font-weight: 500;
+}
+
+/* Transient send error banner (composer area) */
+.send-error-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0 var(--space-lg) var(--space-xs);
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--alert-clay) 45%, transparent);
+  background: color-mix(in srgb, var(--alert-clay) 9%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--alert-clay);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.send-error-banner svg {
+  flex-shrink: 0;
+}
+.send-error-close {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px;
+}
+.send-error-close:hover {
+  background: color-mix(in srgb, var(--alert-clay) 18%, transparent);
+}
+
+/* ============ LIGHT-MODE CONTRAST OVERRIDES ============
+   Accent tints that read well on dark (#C2A97F) are too pale on the light
+   beige/white surfaces; pin them to the deep gold / warm-ink for WCAG AA. */
+[data-theme='light'] .md h1,
+[data-theme='light'] .md h2,
+[data-theme='light'] .md h3,
+[data-theme='light'] .md h4 {
+  color: var(--text-ink);
+}
+[data-theme='light'] .md a,
+[data-theme='light'] .limit-banner-link,
+[data-theme='light'] .login-chip:hover,
+[data-theme='light'] .nav-link:hover,
+[data-theme='light'] .md code {
+  color: var(--gold-deep);
+}
+[data-theme='light'] .citation-chip {
+  color: var(--gold-deep);
+  background: #FFFFFF;
+}
+[data-theme='light'] .citation-chip:hover {
+  background: var(--bg-surface);
+  border-color: var(--gold-deep);
+}
+[data-theme='light'] .agent-row-spinner,
+[data-theme='light'] .agent-row--running.agent-row--blink .agent-row-title {
+  color: var(--gold-deep);
+}
+[data-theme='light'] .md blockquote {
+  color: var(--text-body);
 }

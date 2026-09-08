@@ -7,6 +7,7 @@ interface BalanceLoaderProps {
   compact?: boolean;
   timeScale?: number;
   static?: boolean;
+  gentle?: boolean;
 }
 
 /**
@@ -21,13 +22,22 @@ interface BalanceLoaderProps {
  * - `compact`: very small inline variant (e.g. next to "Vérification du JORA…").
  * - `timeScale`: multiplies the animation speed (2 = twice as fast).
  * - `static`: renders the balance-scale without any movement (used as a
- *   static status indicator, e.g. the empty new-discussion state).
+ *   static status indicator).
+ * - `gentle`: idle animation mode — a slow, subtle ±4° oscillation intended
+ *   for the empty new-discussion hero, instead of the fast "thinking" spin.
  */
-export default function BalanceLoader({ compact = false, timeScale = 2, static: isStatic = false }: BalanceLoaderProps) {
+export default function BalanceLoader({
+  compact = false,
+  timeScale,
+  static: isStatic = false,
+  gentle = false,
+}: BalanceLoaderProps) {
   const gid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const beamRef = useRef<SVGGElement | null>(null);
   const leftRef = useRef<SVGGElement | null>(null);
   const rightRef = useRef<SVGGElement | null>(null);
+
+  const effectiveTimeScale = timeScale ?? (gentle ? 1 : 2);
 
   useEffect(() => {
     if (isStatic) return;
@@ -37,7 +47,19 @@ export default function BalanceLoader({ compact = false, timeScale = 2, static: 
     const right = rightRef.current;
     if (!beam || !left || !right) return;
 
-    const tl = gsap.timeline({ repeat: -1 }).timeScale(timeScale);
+    // Gentle idle sway — the beam rocks subtly between ±4° (yoyo loop, ~3s
+    // per half-swing) so the pans keep counter-rotating to stay vertical.
+    if (gentle) {
+      const tl = gsap.timeline({ repeat: -1, yoyo: true }).timeScale(effectiveTimeScale);
+      tl.to(beam, { rotation: -4, svgOrigin: "250 115", duration: 1.6, ease: "sine.inOut" }, 0)
+        .to(left, { rotation: 4, svgOrigin: "70 115", duration: 1.6, ease: "sine.inOut" }, 0)
+        .to(right, { rotation: 4, svgOrigin: "430 115", duration: 1.6, ease: "sine.inOut" }, 0);
+      return () => {
+        tl.kill();
+      };
+    }
+
+    const tl = gsap.timeline({ repeat: -1 }).timeScale(effectiveTimeScale);
 
     // Phase 1 — Left pan up, right pan down (0.0s → 1.25s)
     tl.to(beam, { rotation: -9, svgOrigin: "250 115", duration: 1.25, ease: "power1.inOut" }, 0)
@@ -57,15 +79,15 @@ export default function BalanceLoader({ compact = false, timeScale = 2, static: 
     return () => {
       tl.kill();
     };
-  }, [timeScale, isStatic]);
+  }, [effectiveTimeScale, isStatic, gentle]);
 
   return (
     <svg
       className={compact ? "balance-scale balance-scale--compact" : "balance-scale"}
       viewBox="0 0 500 400"
       role="img"
-      aria-hidden={isStatic ? "true" : undefined}
-      aria-label={isStatic ? undefined : "La réponse de l'agent arrive"}
+      aria-hidden={isStatic || gentle ? "true" : undefined}
+      aria-label={isStatic || gentle ? undefined : "La réponse de l'agent arrive"}
     >
       <defs>
         <linearGradient id={`pillar-${gid}`} x1="0%" y1="0%" x2="100%" y2="0%">
