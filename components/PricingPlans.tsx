@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { plansApi, paymentsApi, authApi, ApiError, type Plan as ApiPlan } from "@/lib/api";
+import { plansApi, paymentsApi, userApi, ApiError, type Plan as ApiPlan } from "@/lib/api";
+
+const NAME_MAP: Record<string, string> = {
+  "Découverte": "free",
+  "Plus": "plus",
+  "Pro": "pro",
+};
+
+const TIER_RANK: Record<string, number> = { free: 0, plus: 1, pro: 2 };
 
 type Plan = {
   name: string;
@@ -22,7 +30,6 @@ const plans: Plan[] = [
     monthly: 0,
     period: "DA / mois",
     desc: "Pour essayer la plateforme",
-    current: true,
     features: [
       "Questions limitées / jour",
       "Mode Standard",
@@ -86,14 +93,19 @@ export default function PricingPlans() {
   }, []);
 
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [currentPlanName, setCurrentPlanName] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    authApi
-      .me()
-      .then(() => !cancelled && setIsAuthed(true))
+    userApi
+      .subscription()
+      .then((sub) => {
+        if (cancelled) return;
+        setIsAuthed(true);
+        setCurrentPlanName(sub?.plan.name ?? null);
+      })
       .catch(() => !cancelled && setIsAuthed(false));
     return () => {
       cancelled = true;
@@ -101,12 +113,7 @@ export default function PricingPlans() {
   }, []);
 
   const startCheckout = async (displayName: string) => {
-    const slugMap: Record<string, string> = {
-      "Découverte": "free",
-      "Plus": "plus",
-      "Pro": "pro",
-    };
-    const apiPlan = apiPlans.find((p) => p.name === slugMap[displayName]);
+    const apiPlan = apiPlans.find((p) => p.name === NAME_MAP[displayName]);
     if (!apiPlan) return;
     setCheckingOut(displayName);
     setCheckoutError(null);
@@ -125,12 +132,7 @@ export default function PricingPlans() {
 
   // Map display plan name to API plan slug
   const getPlanPrice = (displayName: string): string => {
-    const nameMap: Record<string, string> = {
-      "Découverte": "free",
-      "Plus": "plus",
-      "Pro": "pro",
-    };
-    const apiPlan = apiPlans.find((p) => p.name === nameMap[displayName]);
+    const apiPlan = apiPlans.find((p) => p.name === NAME_MAP[displayName]);
     if (!apiPlan) {
       if (displayName === "Découverte") return "0";
       return "…";
@@ -138,6 +140,12 @@ export default function PricingPlans() {
     if (apiPlan.price_dzd === 0) return "0";
     return apiPlan.price_dzd.toLocaleString("fr-DZ");
   };
+
+  const currentRank = isAuthed
+    ? currentPlanName
+      ? (TIER_RANK[currentPlanName] ?? 0)
+      : 0
+    : null;
 
   return (
     <>
@@ -210,7 +218,21 @@ export default function PricingPlans() {
                 ))}
               </ul>
               <div className="plan-cta">
-                {p.current ? (
+                {p.enterprise ? (
+                  <a
+                    className="btn btn-ghost"
+                    href="mailto:contact@bettercallai.dz?subject=Demande%20Entreprise"
+                    style={{ width: "100%", textDecoration: "none" }}
+                  >
+                    Nous contacter
+                  </a>
+                ) : (currentRank !== null &&
+                    TIER_RANK[NAME_MAP[p.name] ?? ""] < currentRank) ? (
+                  <span className="plan-disabled-note">
+                    Inclus dans votre abonnement actuel
+                  </span>
+                ) : (isAuthed &&
+                    TIER_RANK[NAME_MAP[p.name] ?? ""] === currentRank) ? (
                   <button
                     className="btn btn-ghost"
                     type="button"
@@ -219,14 +241,6 @@ export default function PricingPlans() {
                   >
                     Plan actuel
                   </button>
-                ) : p.enterprise ? (
-                  <a
-                    className="btn btn-ghost"
-                    href="mailto:contact@bettercallai.dz?subject=Demande%20Entreprise"
-                    style={{ width: "100%", textDecoration: "none" }}
-                  >
-                    Nous contacter
-                  </a>
                 ) : isAuthed ? (
                   <button
                     className="btn btn-gold"
@@ -235,7 +249,9 @@ export default function PricingPlans() {
                     disabled={checkingOut === p.name}
                     onClick={() => startCheckout(p.name)}
                   >
-                    {checkingOut === p.name ? "Redirection…" : "Choisir ce plan"}
+                    {checkingOut === p.name
+                      ? "Redirection…"
+                      : `Passer à ${p.name}`}
                   </button>
                 ) : (
                   <Link href="/login?next=/pricing" className="btn btn-gold" style={{ width: "100%" }}>
