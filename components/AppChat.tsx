@@ -475,9 +475,11 @@ export default function AppChat() {
         </div>
 
         <div className="sidebar-footer">
-          <Link href="/pricing" className="pro-badge">
-            <Zap size={14} strokeWidth={1.75} /> Passer à Pro
-          </Link>
+          {usage.plan !== "pro" && (
+            <Link href="/pricing" className="pro-badge">
+              <Zap size={14} strokeWidth={1.75} /> Passer à Pro
+            </Link>
+          )}
           {user ? (
             <div className="user-row">
               <div className="user-avatar">
