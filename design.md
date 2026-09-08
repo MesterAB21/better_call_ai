@@ -225,8 +225,8 @@ Bascule **Mensuel / Annuel** (annuel affiche un badge *"-20%"*).
 | Plan | Prix | Pour | Points clés |
 |---|---|---|---|
 | **Découverte** | 0 DA | Essayer | Questions limitées/jour, mode Standard, pas d'historique long terme |
-| **Professionnel** | ~1 900 DA/mois | Avocats indépendants, particuliers exigeants | Usage étendu, mode Recherche Approfondie, export PDF/Word, dossiers illimités |
-| **Cabinet** | ~3 900 DA/utilisateur | Cabinets, PME | Sièges multiples, facturation centralisée, dossiers partagés en équipe, réponses prioritaires |
+| **Plus** | 3 999 DA/mois | Avocats indépendants, particuliers exigeants | 750 000 tokens/jour, mode Recherche Approfondie, export PDF/Word, dossiers illimités |
+| **Pro** | 5 999 DA/mois | Cabinets, PME | Tokens illimités, sièges multiples, facturation centralisée, dossiers partagés en équipe, réponses prioritaires |
 | **Entreprise** | Sur devis | Grands comptes, institutions | SSO, hébergement dédié, SLA, intégration API |
 
 - Cartes avec coche dorée pour chaque fonctionnalité, bouton fantôme si plan courant, bouton plein doré sinon
