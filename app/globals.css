@@ -2413,6 +2413,58 @@ html.lenis body {
   background: var(--bg-surface);
 }
 
+.checkout-error {
+  max-width: 1040px;
+  margin: var(--space-sm) auto 0;
+  color: var(--alert-clay);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.payment-status-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-section) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+.payment-status-card {
+  width: 100%;
+  text-align: center;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.payment-status-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin-bottom: var(--space-sm);
+}
+.payment-status-icon.ok {
+  background: rgba(79, 133, 104, 0.14);
+  color: var(--success-jade);
+  border: 1px solid rgba(79, 133, 104, 0.4);
+}
+.payment-status-icon.no {
+  background: rgba(179, 74, 40, 0.12);
+  color: var(--alert-clay);
+  border: 1px solid rgba(179, 74, 40, 0.4);
+}
+.payment-status-actions {
+  margin-top: var(--space-md);
+}
+
 /* ============ ONBOARDING ============ */
 .onboarding {
   min-height: 100vh;

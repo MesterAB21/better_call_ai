@@ -586,10 +586,12 @@ export type CheckoutResponse = {
   order_id: string;
 };
 
+export type BillingPeriod = "monthly" | "annual";
+
 export const paymentsApi = {
-  checkout: (plan_id: string) =>
+  checkout: (plan_id: string, billing_period: BillingPeriod = "monthly") =>
     request<CheckoutResponse>("/payments/checkout", {
       method: "POST",
-      body: { plan_id },
+      body: { plan_id, billing_period },
     }),
 };

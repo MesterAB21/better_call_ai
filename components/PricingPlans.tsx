@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { plansApi, type Plan as ApiPlan } from "@/lib/api";
+import { plansApi, paymentsApi, authApi, type Plan as ApiPlan } from "@/lib/api";
 
 type Plan = {
   name: string;
@@ -84,6 +84,42 @@ export default function PricingPlans() {
     plansApi.list().then(setApiPlans).catch(() => {});
   }, []);
 
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    authApi
+      .me()
+      .then(() => !cancelled && setIsAuthed(true))
+      .catch(() => !cancelled && setIsAuthed(false));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const startCheckout = async (displayName: string) => {
+    const slugMap: Record<string, string> = {
+      "Découverte": "free",
+      "Professionnel": "plus",
+      "Cabinet": "pro",
+    };
+    const apiPlan = apiPlans.find((p) => p.name === slugMap[displayName]);
+    if (!apiPlan) return;
+    setCheckingOut(displayName);
+    setCheckoutError(null);
+    try {
+      const res = await paymentsApi.checkout(apiPlan.id, billing);
+      window.location.assign(res.checkout_url);
+    } catch {
+      setCheckoutError(
+        "Impossible de démarrer le paiement. Réessayez dans un instant."
+      );
+      setCheckingOut(null);
+    }
+  };
+
   // Map display plan name to API plan slug
   const getPlanPrice = (displayName: string): string => {
     const nameMap: Record<string, string> = {
@@ -124,6 +160,12 @@ export default function PricingPlans() {
           </button>
         </div>
       </div>
+
+      {checkoutError && (
+        <p className="checkout-error" role="alert">
+          {checkoutError}
+        </p>
+      )}
 
       <div className="plans-grid" data-grid>
         {plans.map((p) => {
@@ -182,6 +224,16 @@ export default function PricingPlans() {
                   >
                     Nous contacter
                   </a>
+                ) : isAuthed ? (
+                  <button
+                    className="btn btn-gold"
+                    type="button"
+                    style={{ width: "100%" }}
+                    disabled={checkingOut === p.name}
+                    onClick={() => startCheckout(p.name)}
+                  >
+                    {checkingOut === p.name ? "Redirection…" : "Choisir ce plan"}
+                  </button>
                 ) : (
                   <Link href="/login?next=/pricing" className="btn btn-gold" style={{ width: "100%" }}>
                     Choisir ce plan
