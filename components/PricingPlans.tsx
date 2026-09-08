@@ -1,0 +1,197 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { plansApi, type Plan as ApiPlan } from "@/lib/api";
+
+type Plan = {
+  name: string;
+  monthly: number | null;
+  period: string;
+  desc: string;
+  featured?: boolean;
+  tag?: string;
+  current?: boolean;
+  enterprise?: boolean;
+  features: string[];
+};
+
+const plans: Plan[] = [
+  {
+    name: "Découverte",
+    monthly: 0,
+    period: "DA / mois",
+    desc: "Pour essayer la plateforme",
+    current: true,
+    features: [
+      "Questions limitées / jour",
+      "Mode Standard",
+      "Recherche sur les principaux codes",
+      "Pas d'historique à long terme",
+    ],
+  },
+  {
+    name: "Professionnel",
+    monthly: 1900,
+    period: "DA / mois",
+    desc: "Pour les avocats indépendants et les particuliers exigeants",
+    featured: true,
+    tag: "Populaire",
+    features: [
+      "Usage étendu",
+      "Mode Recherche Approfondie",
+      "Export PDF / Word",
+      "Dossiers illimités",
+      "Citations juridiques détaillées",
+      "OCR automatique FR / AR",
+    ],
+  },
+  {
+    name: "Cabinet",
+    monthly: 3900,
+    period: "DA / utilisateur / mois",
+    desc: "Pour les cabinets et les PME",
+    features: [
+      "Tout le plan Professionnel",
+      "Sièges multiples",
+      "Facturation centralisée",
+      "Dossiers partagés en équipe",
+      "Réponses prioritaires",
+      "Gestion des accès par rôle",
+    ],
+  },
+  {
+    name: "Entreprise",
+    monthly: null,
+    period: "",
+    desc: "Pour les grands comptes et les institutions",
+    enterprise: true,
+    features: [
+      "SSO / authentification unique",
+      "Hébergement dédié",
+      "SLA garanti",
+      "Intégration API",
+      "Support dédié",
+    ],
+  },
+];
+
+export default function PricingPlans() {
+  const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
+  const [apiPlans, setApiPlans] = useState<ApiPlan[]>([]);
+
+  useEffect(() => {
+    plansApi.list().then(setApiPlans).catch(() => {});
+  }, []);
+
+  // Map display plan name to API plan slug
+  const getPlanPrice = (displayName: string): string => {
+    const nameMap: Record<string, string> = {
+      "Découverte": "free",
+      "Professionnel": "plus",
+      "Cabinet": "pro",
+    };
+    const apiPlan = apiPlans.find((p) => p.name === nameMap[displayName]);
+    if (!apiPlan) {
+      if (displayName === "Découverte") return "0";
+      return "…";
+    }
+    if (apiPlan.price_dzd === 0) return "0";
+    return apiPlan.price_dzd.toLocaleString("fr-DZ");
+  };
+
+  return (
+    <>
+      {/* Billing toggle */}
+      <div style={{ display: "flex", justifyContent: "center" }} data-reveal-fade>
+        <div className="billing-toggle" role="group" aria-label="Périodicité">
+          <button
+            type="button"
+            className={`billing-option ${billing === "monthly" ? "active" : ""}`}
+            aria-pressed={billing === "monthly"}
+            onClick={() => setBilling("monthly")}
+          >
+            Mensuel
+          </button>
+          <button
+            type="button"
+            className={`billing-option ${billing === "annual" ? "active" : ""}`}
+            aria-pressed={billing === "annual"}
+            onClick={() => setBilling("annual")}
+          >
+            Annuel
+            <span className="discount-badge">-20%</span>
+          </button>
+        </div>
+      </div>
+
+      <div className="plans-grid" data-grid>
+        {plans.map((p) => {
+          const price = p.enterprise
+            ? "Sur devis"
+            : p.monthly === 0
+              ? "0"
+              : apiPlans.length > 0
+                ? (billing === "annual"
+                    ? Math.round(Number(getPlanPrice(p.name).replace(/\s/g, "")) * 0.8).toLocaleString("fr-DZ")
+                    : getPlanPrice(p.name))
+                : "…";
+          return (
+            <div
+              className={`plan-card ${p.featured ? "featured" : ""} ${p.enterprise ? "enterprise" : ""}`}
+              key={p.name}
+            >
+              <div className="plan-card-header">
+                <span className="plan-name">{p.name}</span>
+                {p.tag && <span className="plan-tag">{p.tag}</span>}
+              </div>
+              <div className="plan-price">
+                {price}
+                {p.period && p.enterprise ? null : p.period && (
+                  <span className="plan-price-period">
+                    {" "}
+                    {p.period === "DA / mois" && billing === "annual" ? "DA / mois (annuel)" : p.period}
+                  </span>
+                )}
+              </div>
+              {p.enterprise && <span className="plan-price-period">{p.period}</span>}
+              <p className="plan-desc">{p.desc}</p>
+              <ul className="plan-feats">
+                {p.features.map((f) => (
+                  <li key={f}>
+                    <span className="check">✓</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="plan-cta">
+                {p.current ? (
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    style={{ width: "100%" }}
+                    disabled
+                  >
+                    Plan actuel
+                  </button>
+                ) : p.enterprise ? (
+                  <a
+                    className="btn btn-ghost"
+                    href="mailto:contact@bettercallai.dz?subject=Demande%20Entreprise"
+                    style={{ width: "100%", textDecoration: "none" }}
+                  >
+                    Nous contacter
+                  </a>
+                ) : (
+                  <Link href="/login?next=/pricing" className="btn btn-gold" style={{ width: "100%" }}>
+                    Choisir ce plan
+                  </Link>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}

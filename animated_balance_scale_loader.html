@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GSAP Animated Balance Scale Loader</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- GSAP Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0d0a08;
+      color: #e5e7eb;
+    }
+
+    .font-serif-title {
+      font-family: 'Cinzel', serif;
+    }
+
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Metallic Metallic Gradients & Glow Effects */
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #fce0a2 0%, #d4af37 50%, #aa7c11 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .glass-panel {
+      background: rgba(22, 17, 14, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .glow-effect {
+      filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.25));
+    }
+
+    /* SVG Transforms & Vector Crispness */
+    svg {
+      overflow: visible;
+    }
+
+    /* Custom Scrollbar for Code Snippet */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #120e0b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3a2e22;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #d4af37;
+    }
+
+    /* Toast Notification Animation */
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .toast-anim {
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-amber-500 selection:text-black">
+
+  <!-- Top Navigation Header -->
+  <header class="w-full border-b border-amber-900/30 bg-black/40 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <i data-lucide="scale" class="w-6 h-6 text-amber-400"></i>
+        </div>
+        <div>
+          <h1 class="font-serif-title font-bold text-lg sm:text-xl tracking-wider gold-gradient-text">EQUILIBRIUM</h1>
+          <p class="text-xs text-amber-200/50">GSAP Animated Balance Component</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-3">
+        <a href="#code-section" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30 transition flex items-center gap-2">
+          <i data-lucide="code" class="w-4 h-4"></i>
+          <span>View Code</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow flex flex-col gap-8">
+    
+    <!-- Hero / Loader Live Interactive Preview Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+      
+      <!-- Interactive Balance Canvas Card -->
+      <div class="lg:col-span-7 glass-panel rounded-2xl p-6 sm:p-10 flex flex-col justify-between items-center relative overflow-hidden min-h-[480px]">
+        
+        <!-- Subtle Ambient Backlight -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-amber-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-yellow-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Top Badge Info -->
+        <div class="w-full flex justify-between items-center z-10 mb-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            Exact 5s Motion Cycle
+          </div>
+          <div id="cycle-phase-badge" class="text-xs font-mono-code text-amber-400/80 bg-black/50 px-2.5 py-1 rounded-md border border-amber-900/40">
+            Equilibrium (0.0s)
+          </div>
+        </div>
+
+        <!-- SVG BALANCE SCALE COMPONENT -->
+        <div class="relative w-full max-w-md my-auto py-6 flex justify-center items-center glow-effect">
+          <svg id="balance-scale-svg" viewBox="0 0 500 400" class="w-full h-auto max-h-[320px] select-none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Metallic Gold/Brass Gradients -->
+              <linearGradient id="gold-pillar" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#8a6125" />
+                <stop offset="30%" stop-color="#d4af37" />
+                <stop offset="50%" stop-color="#fef0a5" />
+                <stop offset="70%" stop-color="#d4af37" />
+                <stop offset="100%" stop-color="#5c4015" />
+              </linearGradient>
+
+              <linearGradient id="gold-beam" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffe699" />
+                <stop offset="40%" stop-color="#d4af37" />
+                <stop offset="100%" stop-color="#7a5519" />
+              </linearGradient>
+
+              <linearGradient id="pan-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#f5d77f" />
+                <stop offset="25%" stop-color="#b88f28" />
+                <stop offset="80%" stop-color="#593f0d" />
+                <stop offset="100%" stop-color="#2b1d03" />
+              </linearGradient>
+
+              <!-- Drop Shadow Filter -->
+              <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.6"/>
+              </filter>
+            </defs>
+
+            <!-- 1. BASE & CENTER PILLAR (STATIONARY) -->
+            <g id="stationary-base" filter="url(#shadow)">
+              <!-- Base Pedestal -->
+              <ellipse cx="250" cy="365" rx="85" ry="16" fill="url(#gold-pillar)" />
+              <path d="M 180 365 C 180 345, 210 335, 230 330 L 270 330 C 290 335, 320 345, 320 365 Z" fill="url(#gold-pillar)" opacity="0.9" />
+              <rect x="220" y="320" width="60" height="12" rx="3" fill="url(#gold-pillar)" />
+              
+              <!-- Vertical Column -->
+              <path d="M 238 320 L 243 130 L 257 130 L 262 320 Z" fill="url(#gold-pillar)" />
+              <!-- Decorative Rings on Pillar -->
+              <cyan><rect x="235" y="270" width="30" height="8" rx="2" fill="url(#gold-beam)" /></cyan>
+              <rect x="238" y="200" width="24" height="6" rx="2" fill="url(#gold-beam)" />
+              <rect x="240" y="140" width="20" height="6" rx="2" fill="url(#gold-beam)" />
+              
+              <!-- Top Central Fulcrum Ornament/Sphere -->
+              <circle cx="250" cy="115" r="18" fill="url(#gold-pillar)" />
+              <circle cx="250" cy="115" r="10" fill="url(#gold-beam)" />
+              <circle cx="250" cy="115" r="4" fill="#fff" opacity="0.5" />
+            </g>
+
+            <!-- 2. PIVOTING BEAM GROUP (Pivots at 250, 115) -->
+            <g id="main-beam-group">
+              <!-- Horizontal Main Crossbeam -->
+              <path d="M 70 115 C 130 102, 200 108, 250 115 C 300 108, 370 102, 430 115 C 370 122, 300 122, 250 115 C 200 122, 130 122, 70 115 Z" fill="url(#gold-beam)" filter="url(#shadow)" />
+              
+              <!-- Left and Right End Loop Joints -->
+              <circle cx="70" cy="115" r="7" fill="url(#gold-pillar)" />
+              <circle cx="70" cy="115" r="3" fill="#16110e" />
+              
+              <circle cx="430" cy="115" r="7" fill="url(#gold-pillar)" />
+              <circle cx="430" cy="115" r="3" fill="#16110e" />
+
+              <!-- Center Cap -->
+              <circle cx="250" cy="115" r="7" fill="url(#gold-beam)" />
+
+              <!-- 3. LEFT PAN ASSEMBLY (Hangs from Left Joint: 70, 115) -->
+              <g id="left-pan-assembly">
+                <!-- Chain Strings -->
+                <g stroke="url(#gold-beam)" stroke-width="1.8" opacity="0.85" stroke-dasharray="3,2">
+                  <!-- Outer Left Chain -->
+                  <line x1="70" y1="115" x2="20" y2="235" />
+                  <!-- Inner Chain -->
+                  <line x1="70" y1="115" x2="70" y2="235" />
+                  <!-- Outer Right Chain -->
+                  <line x1="70" y1="115" x2="120" y2="235" />
+                </g>
+                
+                <!-- Left Metallic Pan Bowl -->
+                <g filter="url(#shadow)">
+                  <path d="M 15 235 C 15 265, 125 265, 125 235 Z" fill="url(#pan-gradient)" />
+                  <!-- Pan Rim -->
+                  <ellipse cx="70" cy="235" rx="55" ry="7" fill="url(#gold-beam)" />
+                  <ellipse cx="70" cy="235" rx="51" ry="5" fill="#382607" />
+                </g>
+              </g>
+
+              <!-- 4. RIGHT PAN ASSEMBLY (Hangs from Right Joint: 430, 115) -->
+              <g id="right-pan-assembly">
+                <!-- Chain Strings -->
+                <g stroke="url(#gold-beam)" stroke-width="1.8" opacity="0.85" stroke-dasharray="3,2">
+                  <!-- Outer Left Chain -->
+                  <line x1="430" y1="115" x2="380" y2="235" />
+                  <!-- Inner Chain -->
+                  <line x1="430" y1="115" x2="430" y2="235" />
+                  <!-- Outer Right Chain -->
+                  <line x1="430" y1="115" x2="480" y2="235" />
+                </g>
+                
+                <!-- Right Metallic Pan Bowl -->
+                <g filter="url(#shadow)">
+                  <path d="M 375 235 C 375 265, 485 265, 485 235 Z" fill="url(#pan-gradient)" />
+                  <!-- Pan Rim -->
+                  <ellipse cx="430" cy="235" rx="55" ry="7" fill="url(#gold-beam)" />
+                  <ellipse cx="430" cy="235" rx="51" ry="5" fill="#382607" />
+                </g>
+              </g>
+
+            </g> <!-- End Beam Group -->
+          </svg>
+        </div>
+
+        <!-- Interactive Controls Bar -->
+        <div class="w-full bg-black/60 border border-amber-900/30 rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4 z-10">
+          
+          <!-- Playback Toggle Buttons -->
+          <div class="flex items-center space-x-2">
+            <button id="btn-play-pause" class="p-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold transition flex items-center justify-center">
+              <i data-lucide="pause" id="icon-play-pause" class="w-5 h-5"></i>
+            </button>
+            <button id="btn-restart" class="p-2.5 rounded-lg bg-amber-900/30 hover:bg-amber-800/40 text-amber-200 border border-amber-500/20 transition flex items-center justify-center">
+              <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <!-- Progress Bar & Time -->
+          <div class="flex-grow w-full flex items-center gap-3">
+            <span id="current-time" class="text-xs font-mono-code text-amber-300 min-w-[32px]">0.0s</span>
+            <div class="relative flex-grow h-2 bg-amber-950 rounded-full overflow-hidden cursor-pointer" id="progress-container">
+              <div id="progress-bar" class="h-full bg-gradient-to-r from-amber-600 to-amber-400 w-0 transition-all duration-75"></div>
+            </div>
+            <span class="text-xs font-mono-code text-amber-500/60">5.0s</span>
+          </div>
+
+          <!-- Speed Controls -->
+          <div class="flex items-center gap-1 bg-amber-950/50 p-1 rounded-lg border border-amber-900/40">
+            <button data-speed="0.5" class="btn-speed text-xs px-2 py-1 rounded text-amber-400/70 hover:text-amber-200">0.5x</button>
+            <button data-speed="1.0" class="btn-speed text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">1.0x</button>
+            <button data-speed="1.5" class="btn-speed text-xs px-2 py-1 rounded text-amber-400/70 hover:text-amber-200">1.5x</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Technical Motion Specs Sidebar -->
+      <div class="lg:col-span-5 flex flex-col gap-6 justify-between">
+        
+        <!-- Feature Highlights Card -->
+        <div class="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
+          <h2 class="font-serif-title text-xl font-bold text-amber-300 flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-5 h-5 text-amber-400"></i>
+            Physics & Motion Specs
+          </h2>
+
+          <!-- Motion Sequence Timeline Breakdown -->
+          <div class="space-y-4">
+            <div id="card-phase-1" class="p-3.5 rounded-xl bg-amber-950/20 border border-amber-900/30 transition-all">
+              <div class="flex items-center justify-between text-xs font-semibold mb-1">
+                <span class="text-amber-300">Phase 1: Initial Tilt</span>
+                <span class="font-mono-code text-amber-400/70">0.0s – 1.25s</span>
+              </div>
+              <p class="text-xs text-neutral-400">Main beam pivots CCW (-9°). Left pan rises seamlessly while right pan descends.</p>
+            </div>
+
+            <div id="card-phase-2" class="p-3.5 rounded-xl bg-amber-950/20 border border-amber-900/30 transition-all">
+              <div class="flex items-center justify-between text-xs font-semibold mb-1">
+                <span class="text-amber-300">Phase 2: Reversal Shift</span>
+                <span class="font-mono-code text-amber-400/70">1.25s – 3.75s</span>
+              </div>
+              <p class="text-xs text-neutral-400">Beam rotates smoothly clockwise to +9°. Left pan descends as right pan ascends.</p>
+            </div>
+
+            <div id="card-phase-3" class="p-3.5 rounded-xl bg-amber-950/20 border border-amber-900/30 transition-all">
+              <div class="flex items-center justify-between text-xs font-semibold mb-1">
+                <span class="text-amber-300">Phase 3: Return to Equilibrium</span>
+                <span class="font-mono-code text-amber-400/70">3.75s – 5.0s</span>
+              </div>
+              <p class="text-xs text-neutral-400">Beam decelerates back to horizontal (0°). Perfectly balanced loop conclusion.</p>
+            </div>
+          </div>
+
+          <!-- Synchronized Physics Note -->
+          <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+            <i data-lucide="shield-check" class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5"></i>
+            <p class="text-xs text-amber-200/80 leading-relaxed">
+              <strong class="text-amber-300">True Gravity Counter-Rotation:</strong> As the crossbeam rotates, the pans are dynamically counter-rotated in real time so their hanging chains remain strictly vertical.
+            </p>
+          </div>
+        </div>
+
+        <!-- Quick Quick Facts Badge -->
+        <div class="glass-panel rounded-2xl p-6 flex items-center justify-between">
+          <div>
+            <div class="text-xs text-amber-400/60 font-medium">Lottie / MP4 Alternative</div>
+            <div class="text-sm font-semibold text-amber-200">Zero Dependencies (Pure JS/SVG)</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-amber-400/60 font-medium">Payload Size</div>
+            <div class="text-sm font-bold font-mono-code text-amber-400">&lt; 4 KB</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Code Integration & Export Section -->
+    <section id="code-section" class="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="font-serif-title text-lg font-bold text-amber-300 flex items-center gap-2">
+            <i data-lucide="code-2" class="w-5 h-5 text-amber-400"></i>
+            Embed Code Snippet
+          </h3>
+          <p class="text-xs text-neutral-400 mt-1">Copy and paste this lightweight standalone snippet directly into your web project.</p>
+        </div>
+
+        <!-- Code Switcher Tabs -->
+        <div class="flex items-center gap-2 bg-black/40 p-1 rounded-xl border border-amber-900/40">
+          <button id="tab-btn-gsap" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-black transition">
+            GSAP JS Code
+          </button>
+          <button id="tab-btn-svg" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-amber-300 hover:bg-amber-500/10 transition">
+            SVG Structure
+          </button>
+        </div>
+      </div>
+
+      <!-- Code Container -->
+      <div class="relative bg-black/80 rounded-xl border border-amber-900/40 p-4 font-mono-code text-xs text-amber-200/90 overflow-x-auto max-h-[350px]">
+        
+        <!-- Copy Button -->
+        <button id="btn-copy-code" class="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs flex items-center gap-1.5 transition">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span id="copy-btn-text">Copy Code</span>
+        </button>
+
+        <!-- Code Text Content -->
+        <pre id="code-block-content" class="leading-relaxed"><code>// GSAP Timeline initialization for Balance Scale
+const scaleTL = gsap.timeline({ repeat: -1 });
+
+// Exactly 5.0 Seconds Cycle Duration
+scaleTL
+  // Phase 1: Left Pan UP, Right Pan DOWN (0.0s -> 1.25s)
+  .to("#main-beam-group", {
+    rotation: -9,
+    transformOrigin: "250px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 0)
+  .to("#left-pan-assembly", {
+    rotation: 9,
+    transformOrigin: "70px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 0)
+  .to("#right-pan-assembly", {
+    rotation: 9,
+    transformOrigin: "430px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 0)
+
+  // Phase 2: Reverse Shift - Left DOWN, Right UP (1.25s -> 3.75s)
+  .to("#main-beam-group", {
+    rotation: 9,
+    transformOrigin: "250px 115px",
+    duration: 2.5,
+    ease: "power1.inOut"
+  }, 1.25)
+  .to("#left-pan-assembly", {
+    rotation: -9,
+    transformOrigin: "70px 115px",
+    duration: 2.5,
+    ease: "power1.inOut"
+  }, 1.25)
+  .to("#right-pan-assembly", {
+    rotation: -9,
+    transformOrigin: "430px 115px",
+    duration: 2.5,
+    ease: "power1.inOut"
+  }, 1.25)
+
+  // Phase 3: Return to Horizontal Equilibrium (3.75s -> 5.0s)
+  .to("#main-beam-group", {
+    rotation: 0,
+    transformOrigin: "250px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 3.75)
+  .to("#left-pan-assembly", {
+    rotation: 0,
+    transformOrigin: "70px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 3.75)
+  .to("#right-pan-assembly", {
+    rotation: 0,
+    transformOrigin: "430px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 3.75);</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full border-t border-amber-900/30 py-6 bg-black/40 text-center text-xs text-amber-200/40">
+    <p>Designed with GSAP 3 & SVG • Ultra-lightweight Web Loading Spinner</p>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 hidden bg-amber-500 text-black px-4 py-2.5 rounded-xl font-semibold text-xs shadow-2xl z-50 flex items-center gap-2 toast-anim">
+    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // GSAP Timeline Instance
+    let tl;
+    let isPlaying = true;
+
+    // Code Snippets Cache
+    const codeSnippets = {
+      gsap: `// GSAP Timeline initialization for Balance Scale
+const scaleTL = gsap.timeline({ repeat: -1 });
+
+// Exactly 5.0 Seconds Cycle Duration
+scaleTL
+  // Phase 1: Left Pan UP, Right Pan DOWN (0.0s -> 1.25s)
+  .to("#main-beam-group", {
+    rotation: -9,
+    transformOrigin: "250px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 0)
+  .to("#left-pan-assembly", {
+    rotation: 9,
+    transformOrigin: "70px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 0)
+  .to("#right-pan-assembly", {
+    rotation: 9,
+    transformOrigin: "430px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 0)
+
+  // Phase 2: Reverse Shift - Left DOWN, Right UP (1.25s -> 3.75s)
+  .to("#main-beam-group", {
+    rotation: 9,
+    transformOrigin: "250px 115px",
+    duration: 2.5,
+    ease: "power1.inOut"
+  }, 1.25)
+  .to("#left-pan-assembly", {
+    rotation: -9,
+    transformOrigin: "70px 115px",
+    duration: 2.5,
+    ease: "power1.inOut"
+  }, 1.25)
+  .to("#right-pan-assembly", {
+    rotation: -9,
+    transformOrigin: "430px 115px",
+    duration: 2.5,
+    ease: "power1.inOut"
+  }, 1.25)
+
+  // Phase 3: Return to Horizontal Equilibrium (3.75s -> 5.0s)
+  .to("#main-beam-group", {
+    rotation: 0,
+    transformOrigin: "250px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 3.75)
+  .to("#left-pan-assembly", {
+    rotation: 0,
+    transformOrigin: "70px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 3.75)
+  .to("#right-pan-assembly", {
+    rotation: 0,
+    transformOrigin: "430px 115px",
+    duration: 1.25,
+    ease: "power1.inOut"
+  }, 3.75);`,
+
+      svg: `<svg id="balance-scale-svg" viewBox="0 0 500 400" width="300" height="240" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradients & Base Pillar Here -->
+  <g id="stationary-base">
+    <ellipse cx="250" cy="365" rx="85" ry="16" fill="url(#gold-pillar)" />
+    <path d="M 238 320 L 243 130 L 257 130 L 262 320 Z" fill="url(#gold-pillar)" />
+    <circle cx="250" cy="115" r="18" fill="url(#gold-pillar)" />
+  </g>
+
+  <!-- Pivoting Beam & Pans Assembly -->
+  <g id="main-beam-group">
+    <path d="M 70 115 C 130 102, 200 108, 250 115 C 300 108, 370 102, 430 115 Z" fill="url(#gold-beam)" />
+    
+    <!-- Left Pan Assembly -->
+    <g id="left-pan-assembly">
+      <line x1="70" y1="115" x2="20" y2="235" stroke="gold" stroke-dasharray="3,2"/>
+      <line x1="70" y1="115" x2="120" y2="235" stroke="gold" stroke-dasharray="3,2"/>
+      <path d="M 15 235 C 15 265, 125 265, 125 235 Z" fill="url(#pan-gradient)" />
+    </g>
+
+    <!-- Right Pan Assembly -->
+    <g id="right-pan-assembly">
+      <line x1="430" y1="115" x2="380" y2="235" stroke="gold" stroke-dasharray="3,2"/>
+      <line x1="430" y1="115" x2="480" y2="235" stroke="gold" stroke-dasharray="3,2"/>
+      <path d="M 375 235 C 375 265, 485 265, 485 235 Z" fill="url(#pan-gradient)" />
+    </g>
+  </g>
+</svg>`
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // DOM Elements
+      const btnPlayPause = document.getElementById("btn-play-pause");
+      const iconPlayPause = document.getElementById("icon-play-pause");
+      const btnRestart = document.getElementById("btn-restart");
+      const progressBar = document.getElementById("progress-bar");
+      const progressContainer = document.getElementById("progress-container");
+      const currentTimeText = document.getElementById("current-time");
+      const cyclePhaseBadge = document.getElementById("cycle-phase-badge");
+      
+      const cardPhase1 = document.getElementById("card-phase-1");
+      const cardPhase2 = document.getElementById("card-phase-2");
+      const cardPhase3 = document.getElementById("card-phase-3");
+
+      // Build GSAP Master Timeline (Exact 5.0 Seconds Cycle)
+      tl = gsap.timeline({
+        repeat: -1,
+        onUpdate: updateUIProgress
+      });
+
+      // --- PHASE 1: Left UP (-9deg beam), Right DOWN (0.0s -> 1.25s) ---
+      tl.to("#main-beam-group", {
+        rotation: -9,
+        transformOrigin: "250px 115px",
+        duration: 1.25,
+        ease: "power1.inOut"
+      }, 0)
+      .to("#left-pan-assembly", {
+        rotation: 9, // Counter-rotate to stay upright
+        transformOrigin: "70px 115px",
+        duration: 1.25,
+        ease: "power1.inOut"
+      }, 0)
+      .to("#right-pan-assembly", {
+        rotation: 9, // Counter-rotate to stay upright
+        transformOrigin: "430px 115px",
+        duration: 1.25,
+        ease: "power1.inOut"
+      }, 0)
+
+      // --- PHASE 2: Reversal Shift - Left DOWN (+9deg beam), Right UP (1.25s -> 3.75s) ---
+      .to("#main-beam-group", {
+        rotation: 9,
+        transformOrigin: "250px 115px",
+        duration: 2.5,
+        ease: "power1.inOut"
+      }, 1.25)
+      .to("#left-pan-assembly", {
+        rotation: -9,
+        transformOrigin: "70px 115px",
+        duration: 2.5,
+        ease: "power1.inOut"
+      }, 1.25)
+      .to("#right-pan-assembly", {
+        rotation: -9,
+        transformOrigin: "430px 115px",
+        duration: 2.5,
+        ease: "power1.inOut"
+      }, 1.25)
+
+      // --- PHASE 3: Return to Perfect Center Equilibrium (3.75s -> 5.0s) ---
+      .to("#main-beam-group", {
+        rotation: 0,
+        transformOrigin: "250px 115px",
+        duration: 1.25,
+        ease: "power1.inOut"
+      }, 3.75)
+      .to("#left-pan-assembly", {
+        rotation: 0,
+        transformOrigin: "70px 115px",
+        duration: 1.25,
+        ease: "power1.inOut"
+      }, 3.75)
+      .to("#right-pan-assembly", {
+        rotation: 0,
+        transformOrigin: "430px 115px",
+        duration: 1.25,
+        ease: "power1.inOut"
+      }, 3.75);
+
+      // Update UI Progress, Badges & Highlights
+      function updateUIProgress() {
+        const progress = tl.progress();
+        const time = (progress * 5).toFixed(1);
+        
+        progressBar.style.width = `${progress * 100}%`;
+        currentTimeText.textContent = `${time}s`;
+
+        // Active Phase Detection
+        const rawTime = progress * 5;
+        
+        cardPhase1.classList.remove("border-amber-400", "bg-amber-500/10");
+        cardPhase2.classList.remove("border-amber-400", "bg-amber-500/10");
+        cardPhase3.classList.remove("border-amber-400", "bg-amber-500/10");
+
+        if (rawTime < 1.25) {
+          cyclePhaseBadge.textContent = `Left UP / Right DOWN (${time}s)`;
+          cardPhase1.classList.add("border-amber-400", "bg-amber-500/10");
+        } else if (rawTime >= 1.25 && rawTime < 3.75) {
+          cyclePhaseBadge.textContent = `Left DOWN / Right UP (${time}s)`;
+          cardPhase2.classList.add("border-amber-400", "bg-amber-500/10");
+        } else {
+          cyclePhaseBadge.textContent = `Returning to Balance (${time}s)`;
+          cardPhase3.classList.add("border-amber-400", "bg-amber-500/10");
+        }
+      }
+
+      // Play / Pause Control
+      btnPlayPause.addEventListener("click", () => {
+        if (isPlaying) {
+          tl.pause();
+          btnPlayPause.innerHTML = `<i data-lucide="play" class="w-5 h-5"></i>`;
+        } else {
+          tl.play();
+          btnPlayPause.innerHTML = `<i data-lucide="pause" class="w-5 h-5"></i>`;
+        }
+        isPlaying = !isPlaying;
+        lucide.createIcons();
+      });
+
+      // Restart Control
+      btnRestart.addEventListener("click", () => {
+        tl.restart();
+        if (!isPlaying) {
+          tl.play();
+          isPlaying = true;
+          btnPlayPause.innerHTML = `<i data-lucide="pause" class="w-5 h-5"></i>`;
+          lucide.createIcons();
+        }
+      });
+
+      // Speed Buttons
+      document.querySelectorAll(".btn-speed").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          document.querySelectorAll(".btn-speed").forEach(b => {
+            b.classList.remove("bg-amber-500/20", "text-amber-300", "font-bold", "border", "border-amber-500/30");
+            b.classList.add("text-amber-400/70");
+          });
+
+          const speed = parseFloat(e.target.getAttribute("data-speed"));
+          tl.timeScale(speed);
+          
+          e.target.classList.add("bg-amber-500/20", "text-amber-300", "font-bold", "border", "border-amber-500/30");
+          e.target.classList.remove("text-amber-400/70");
+        });
+      });
+
+      // Scrubber Progress Seek
+      progressContainer.addEventListener("click", (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        const clickPos = (e.clientX - rect.left) / rect.width;
+        tl.progress(clickPos);
+      });
+
+      // Code Tab Switching
+      const tabBtnGsap = document.getElementById("tab-btn-gsap");
+      const tabBtnSvg = document.getElementById("tab-btn-svg");
+      const codeBlockContent = document.getElementById("code-block-content");
+      let activeTab = "gsap";
+
+      tabBtnGsap.addEventListener("click", () => {
+        activeTab = "gsap";
+        tabBtnGsap.className = "px-4 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-black transition";
+        tabBtnSvg.className = "px-4 py-1.5 rounded-lg text-xs font-semibold text-amber-300 hover:bg-amber-500/10 transition";
+        codeBlockContent.textContent = codeSnippets.gsap;
+      });
+
+      tabBtnSvg.addEventListener("click", () => {
+        activeTab = "svg";
+        tabBtnSvg.className = "px-4 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-black transition";
+        tabBtnGsap.className = "px-4 py-1.5 rounded-lg text-xs font-semibold text-amber-300 hover:bg-amber-500/10 transition";
+        codeBlockContent.textContent = codeSnippets.svg;
+      });
+
+      // Copy Code Button
+      const btnCopyCode = document.getElementById("btn-copy-code");
+      const copyBtnText = document.getElementById("copy-btn-text");
+      const toast = document.getElementById("toast");
+
+      btnCopyCode.addEventListener("click", () => {
+        const textToCopy = codeSnippets[activeTab];
+        
+        // Use fallback execCommand copy mechanism
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+
+        copyBtnText.textContent = "Copied!";
+        toast.classList.remove("hidden");
+
+        setTimeout(() => {
+          copyBtnText.textContent = "Copy Code";
+          toast.classList.add("hidden");
+        }, 2000);
+      });
+    });
+  </script>
+</body>
+</html>

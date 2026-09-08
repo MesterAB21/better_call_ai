@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better Call AI - Login</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            leftbg: '#EFE8D8',
+                            rightbg: '#1E1715',
+                            primary: '#6B433F',
+                            textdark: '#2c2520',
+                            textlight: '#EFE8D8',
+                            border: '#d0c6b4'
+                        }
+                    },
+                    fontFamily: {
+                        montserrat: ['Montserrat', 'sans-serif'],
+                        playfair: ['Playfair Display', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Custom scrollbar for left pane */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d0c6b4; border-radius: 10px; }
+        
+        /* Form input autocomplete background override */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #efe7d5 inset !important;
+            -webkit-text-fill-color: #2d251f !important;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col md:flex-row antialiased overflow-hidden bg-brand-leftbg text-brand-textdark font-montserrat">
+
+    <!-- LEFT PANE -->
+    <div class="w-full md:w-1/2 h-full bg-brand-leftbg px-8 py-8 md:px-12 md:py-10 lg:px-20 lg:py-12 flex flex-col overflow-y-auto relative">
+        
+        <!-- Header Links -->
+        <header class="flex justify-between items-center text-[10px] font-bold tracking-[0.2em] uppercase w-full text-brand-textdark/70">
+            <a href="#" class="flex items-center gap-2 hover:text-brand-primary transition-colors">
+                <i class="fas fa-arrow-left"></i> ACCUEIL
+            </a>
+            <span>ESPACE PRIVÉ / 01</span>
+        </header>
+
+        <!-- Mini Logo -->
+        <div class="flex items-center gap-4 mt-12 md:mt-16">
+            <div class="w-10 h-10 rounded-full border border-brand-textdark/30 flex items-center justify-center shrink-0">
+                <i class="fas fa-balance-scale text-brand-textdark/80 text-sm"></i>
+            </div>
+            <div class="flex flex-col">
+                <span class="font-playfair text-xl font-medium text-brand-textdark leading-tight">Better Call <span class="italic">AI</span></span>
+                <span class="text-[7px] tracking-[0.25em] text-brand-textdark/60 uppercase mt-0.5">Droit, avec clarté</span>
+            </div>
+        </div>
+
+        <!-- Main Title & Subtitle -->
+        <div class="mt-14 lg:mt-20">
+            <h3 class="text-[9px] tracking-[0.25em] uppercase text-brand-textdark/60 mb-4 font-semibold">Ravi de vous revoir</h3>
+            <h1 class="font-playfair text-[3rem] md:text-[3.5rem] lg:text-[4rem] text-brand-textdark leading-none font-medium">Reprendre le fil.</h1>
+            <p class="text-xs md:text-[13px] mt-6 text-brand-textdark/70 max-w-sm leading-relaxed font-medium">
+                Vos consultations et vos recherches sont conservées dans un espace confidentiel.
+            </p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-8 mt-10 border-b border-brand-border text-[10px] tracking-[0.15em] uppercase font-bold w-full max-w-md">
+            <button class="pb-3 border-b-[3px] border-brand-primary text-brand-primary px-1">Se connecter</button>
+            <button class="pb-3 text-brand-textdark/40 hover:text-brand-textdark/70 transition-colors px-1">Créer un compte</button>
+        </div>
+
+        <!-- Login Form -->
+        <form class="mt-8 flex flex-col gap-6 w-full max-w-md flex-grow">
+            
+            <!-- Username Input -->
+            <div class="flex flex-col gap-2">
+                <label class="text-[9px] tracking-[0.2em] uppercase text-brand-textdark/60 font-bold">Nom d'utilisateur</label>
+                <div class="flex items-center gap-3 border-b border-brand-border pb-2 focus-within:border-brand-primary transition-colors">
+                    <i class="far fa-user text-brand-textdark/50 text-xs"></i>
+                    <input type="text" value="nadia.benali" class="w-full bg-transparent outline-none text-sm text-brand-textdark font-medium placeholder-brand-textdark/30">
+                </div>
+            </div>
+            
+            <!-- Password Input -->
+            <div class="flex flex-col gap-2 mt-2">
+                <label class="text-[9px] tracking-[0.2em] uppercase text-brand-textdark/60 font-bold">Mot de passe</label>
+                <div class="flex items-center gap-3 border-b border-brand-border pb-2 focus-within:border-brand-primary transition-colors">
+                    <i class="fas fa-lock text-brand-textdark/50 text-xs"></i>
+                    <input type="password" placeholder="Six caractères minimum" class="w-full bg-transparent outline-none text-sm text-brand-textdark font-medium placeholder-brand-textdark/40">
+                    <button type="button" class="focus:outline-none"><i class="far fa-eye text-brand-textdark/50 hover:text-brand-textdark transition-colors text-xs"></i></button>
+                </div>
+            </div>
+
+            <!-- Forgot Password -->
+            <div class="flex justify-end mt-1">
+                <a href="#" class="text-[9px] tracking-[0.15em] uppercase text-brand-textdark/60 hover:text-brand-primary transition-colors font-bold">Mot de passe oublié ?</a>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-brand-primary text-white py-4 px-6 flex justify-between items-center text-[10px] tracking-[0.2em] uppercase font-bold hover:bg-[#4d2d2d] transition-colors mt-2 shadow-sm">
+                <span>Entrer dans mon espace</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+
+            <!-- Divider -->
+            <div class="flex items-center gap-4 mt-1">
+                <div class="flex-1 h-px bg-brand-border"></div>
+                <span class="text-[10px] lowercase text-brand-textdark/40 italic font-playfair">ou</span>
+                <div class="flex-1 h-px bg-brand-border"></div>
+            </div>
+            
+            <!-- Google Login Button -->
+            <button type="button" class="w-full border border-brand-border py-4 flex items-center justify-center gap-3 text-[10px] tracking-[0.2em] uppercase font-bold text-brand-textdark hover:bg-black/5 transition-colors">
+                <i class="fab fa-google text-[13px]"></i>
+                Continuer avec Google
+            </button>
+        </form>
+
+        <!-- Left Pane Footer -->
+        <div class="mt-12 mb-4 text-center w-full max-w-md">
+            <p class="text-[9px] text-brand-textdark/50 leading-relaxed font-medium">
+                En continuant, vous acceptez nos conditions d'utilisation.<br>
+                Better Call AI n'est pas un cabinet d'avocats.
+            </p>
+        </div>
+    </div>
+
+    <!-- RIGHT PANE -->
+    <div class="hidden md:flex w-1/2 bg-brand-rightbg relative flex-col items-center justify-center p-12 overflow-hidden z-0">
+        
+        <!-- Grid Background -->
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none -z-10"></div>
+        
+        <!-- Radial Gradient for vignette effect over the grid -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#1E1715_80%)] pointer-events-none -z-10"></div>
+
+        <!-- Faint glow effect behind the logo area -->
+        <div class="absolute w-[500px] h-[500px] bg-white/5 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+
+        <!-- Center Image Content (mix-blend-screen removes the black background) -->
+        <div class="relative z-10 w-full flex flex-col items-center">
+            <img src="better_call_ai_logo_original.png" alt="Better Call AI Logo" class="w-full max-w-[75%] h-auto object-contain mix-blend-screen opacity-95">
+            
+            <!-- Italicized Quote Below Image -->
+            <h2 class="font-playfair italic text-[#EFE8D8] text-opacity-80 text-center text-lg lg:text-xl mt-12 tracking-wide font-medium">
+                « Votre consultant juridique digital numéro 1 en Algérie »
+            </h2>
+        </div>
+
+        <!-- Right Pane Footer (Bottom Left Aligned) -->
+        <div class="absolute bottom-12 left-12 w-full pr-12 z-10">
+            <!-- Subtle separator line -->
+            <div class="w-full max-w-[300px] h-[1px] bg-[#EFE8D8]/20 mb-6"></div>
+            <p class="text-[10px] text-[#EFE8D8]/50 max-w-sm leading-relaxed tracking-wider font-medium">
+                Une lecture augmentée du droit algérien, conçue<br>
+                pour les moments où chaque mot compte.
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>
