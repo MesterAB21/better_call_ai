@@ -177,10 +177,25 @@ export default function AppChat() {
   }, []);
 
   const SUGGESTIONS = [
-    "Régulariser une construction sans permis",
-    "Créer une SARL en Algérie",
-    "Litige avec un locataire",
-    "Droits de succession",
+    {
+      label: "بناء بدون رخصة",
+      prompt:
+        "قمت ببناء مسكن عائلي بدون رخصة بناء فوق قطعة أرض، وأريد تسوية وضعيتي القانونية والحصول على عقد ورخصة مطابقة. كيف يمكنني ذلك",
+    },
+    {
+      label: "عقد عمل وفصل تعسفي",
+      prompt: "عقد عمل وفصل تعسفي",
+    },
+    {
+      label: "Capital d'une SARL",
+      prompt:
+        "Quel est le capital social minimum requis pour la création d'une société à responsabilité limitée (SARL) selon le droit commercial algérien actuellement en vigueur ?",
+    },
+    {
+      label: "Cybercriminalité bancaire",
+      prompt:
+        "Quelles sont les sanctions légales prévues contre une personne ou une société qui accède sans autorisation à un système de traitement automatisé de données bancaires et utilise des documents électroniques falsifiés en Algérie ? La société est-elle également punissable en tant que personne morale ?",
+    },
   ];
 
   const performSend = useCallback(async (text: string) => {
@@ -531,12 +546,12 @@ export default function AppChat() {
                   <p className="conv-empty-sub">Analyse juridique instantanée, claire, et basée sur le droit algérien.</p>
                   <div className="conv-suggestions">
                     {SUGGESTIONS.map((s) => (
-                      <button key={s} type="button" className="conv-suggestion"
+                      <button key={s.label} type="button" className="conv-suggestion"
                         onClick={() => {
-                          if (sending || limitReachedRef.current) { setInputText(s); return; }
-                          performSend(s);
+                          if (sending || limitReachedRef.current) { setInputText(s.prompt); return; }
+                          performSend(s.prompt);
                         }}>
-                        {s}
+                        {s.label}
                       </button>
                     ))}
                   </div>
