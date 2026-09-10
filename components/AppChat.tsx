@@ -647,7 +647,7 @@ export default function AppChat() {
       {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <Link href="/app" aria-label="Better Call AI"><Wordmark size={22} /></Link>
+          <Link href="/" aria-label="Better Call AI"><Wordmark size={22} /></Link>
           <button className="sidebar-collapse-btn" type="button"
             aria-label="Réduire la barre latérale" title="Réduire"
             onClick={() => setSidebarOpen(false)}>
