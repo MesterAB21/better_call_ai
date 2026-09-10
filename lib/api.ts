@@ -159,6 +159,15 @@ export const conversationsApi = {
     if (opts?.before) params.set("before", opts.before);
     return request<Message[]>(`/conversations/${id}/messages?${params.toString()}`);
   },
+  /** Restores a browser-local (guest) conversation into the account. */
+  importConversation: (
+    title: string | undefined,
+    messages: { role: "user" | "assistant"; content: string; type?: string; content_json?: Record<string, unknown> | null }[]
+  ) =>
+    request<Conversation>("/conversations/import", {
+      method: "POST",
+      body: { title, messages },
+    }),
 };
 
 // ── MESSAGES / CHAT ──────────────────────────────────────────────────────────
@@ -311,6 +320,10 @@ export const chatApi = {
 
   stream: (conversation_id: string, content: string, handlers: StreamHandlers = {}) =>
     streamChat(conversation_id, content, handlers),
+
+  /** Guest (anonymous) streaming: browser-local conversation, no DB writes. */
+  guestStream: (conversation_id: string, content: string, handlers: StreamHandlers = {}) =>
+    guestStreamChat(conversation_id, content, handlers),
 };
 
 // ── STREAMING CHAT (SSE) ─────────────────────────────────────────────────────
@@ -445,19 +458,20 @@ export function parseStreamBlock(
 }
 
 /**
- * Streams the assistant response from POST /chat/{id}/send.
+ * Streams the assistant response from a chat SSE endpoint.
  *
  * The request is sent with `Accept: text/event-stream`; the backend may reply
  * either with SSE events (`activity`, `token`, `final`, `error`) or with the
  * legacy JSON ChatResponse — both are handled, so the existing protocol is
  * never broken.
  */
-async function streamChat(
+async function streamRequest(
+  path: string,
   conversation_id: string,
   content: string,
   handlers: StreamHandlers
 ): Promise<ChatResponse> {
-  const res = await fetch(`${BASE}/chat/${conversation_id}/send`, {
+  const res = await fetch(`${BASE}${path}`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -532,6 +546,23 @@ async function streamChat(
     return fallback;
   }
   throw new ApiError(0, "La réponse de l'assistant n'a pas pu être récupérée.");
+}
+
+async function streamChat(
+  conversation_id: string,
+  content: string,
+  handlers: StreamHandlers
+): Promise<ChatResponse> {
+  return streamRequest(`/chat/${conversation_id}/send`, conversation_id, content, handlers);
+}
+
+/** Anonymous variant of `streamChat` — no auth, no persistence. */
+async function guestStreamChat(
+  conversation_id: string,
+  content: string,
+  handlers: StreamHandlers
+): Promise<ChatResponse> {
+  return streamRequest(`/chat/guest/send`, conversation_id, content, handlers);
 }
 
 // ── PLANS ────────────────────────────────────────────────────────────────────

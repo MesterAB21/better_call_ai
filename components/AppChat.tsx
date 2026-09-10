@@ -19,9 +19,14 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useUsage, formatReset } from "@/lib/use-usage";
+import {
+  GUEST_BUDGET, clearGuestState, convFromGuest, readGuestState, seedGuestState,
+  writeGuestState, type GuestState,
+} from "@/lib/guest-store";
 
 export default function AppChat() {
-  const { user, logout } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
+  const isGuest = !user && !authLoading;
   const usage = useUsage();
   const { refresh: refreshUsage } = usage;
   const router = useRouter();
@@ -66,6 +71,10 @@ export default function AppChat() {
   const [streamingText, setStreamingText] = useState("");
   const [assistantError, setAssistantError] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  // Guest workspace (localStorage) + the sign-in prompt shown when the guest
+  // session budget is exhausted and they try to add another message.
+  const [guestState, setGuestState] = useState<GuestState | null>(null);
+  const [guestWidgetOpen, setGuestWidgetOpen] = useState(false);
   const assistantActivitiesRef = useRef<AgentActivityItem[]>([]);
   const streamingTextRef = useRef("");
 
@@ -83,13 +92,67 @@ export default function AppChat() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
-  // Load conversations on mount
+  // Load the workspace once auth is known: the account's conversations for
+  // signed-in users, or the browser-local guest conversation for visitors.
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      let store = readGuestState();
+      if (!store) store = seedGuestState();
+      // Load-from-localStorage at mount: mirrors the on-mount fetch pattern used
+      // by useUsage/auth-context — one synchronous seed, no external system.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGuestState(store);
+      setMessages(store.messages);
+      setActiveId(store.conversation.id);
+      return;
+    }
     conversationsApi.list().then((list) => {
       setConversations(list);
       if (list.length > 0) setActiveId(list[0].id);
     }).catch(() => {});
-  }, []);
+  }, [authLoading, user]);
+
+  // Guest → account: on sign-in/sign-up the browser-local conversation is
+  // imported into the database, then the local copy is cleared so the stored
+  // token counters (not the 100k guest budget) become the source of truth.
+  useEffect(() => {
+    if (authLoading || !user) return;
+    const store = readGuestState();
+    if (!store || store.messages.length === 0) {
+      clearGuestState();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGuestState(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const conv = await conversationsApi.importConversation(
+          store.conversation.title || undefined,
+          store.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+            type: m.type,
+            content_json: m.content_json,
+          }))
+        );
+        if (cancelled) return;
+        clearGuestState();
+        setGuestState(null);
+        const list = await conversationsApi.list();
+        if (cancelled) return;
+        setConversations(list);
+        setActiveId(conv.id);
+        setMessages([]);
+      } catch {
+        // Keep the local guest data — the next authenticated visit will retry.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, user]);
 
   // Server-side search: searches titles AND message content. Debounced so it
   // only fires once the user stops typing. When the field is cleared the
@@ -109,7 +172,7 @@ export default function AppChat() {
 
   // Load the latest page of messages when the active conversation changes
   useEffect(() => {
-    if (!activeId) return;
+    if (!activeId || isGuest) return;
     // Never clobber the optimistic messages while a stream is in flight.
     if (sendingRef.current) return;
     let cancelled = false;
@@ -121,11 +184,11 @@ export default function AppChat() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [activeId]);
+  }, [activeId, isGuest]);
 
   const loadOlder = useCallback(async () => {
     const oldest = messages[0];
-    if (!activeId || loadingOlder || !hasMore || oldest === undefined || sending) return;
+    if (!activeId || loadingOlder || !hasMore || oldest === undefined || sending || isGuest) return;
     setLoadingOlder(true);
     const el = chatContainerRef.current;
     const prevScrollHeight = el?.scrollHeight ?? 0;
@@ -150,7 +213,7 @@ export default function AppChat() {
         if (el) el.scrollTop = prevScrollTop + (el.scrollHeight - prevScrollHeight);
       });
     }
-  }, [activeId, messages, loadingOlder, hasMore, sending]);
+  }, [activeId, messages, loadingOlder, hasMore, sending, isGuest]);
 
   const handleChatScroll = useCallback(() => {
     const el = chatContainerRef.current;
@@ -173,7 +236,7 @@ export default function AppChat() {
   // background; poll until the persisted answer lands, then refresh the page.
   useEffect(() => {
     const last = messages[messages.length - 1];
-    if (!activeId || last?.role !== "user" || sendingRef.current) return;
+    if (!activeId || last?.role !== "user" || sendingRef.current || isGuest) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const poll = async () => {
@@ -195,15 +258,16 @@ export default function AppChat() {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [activeId, messages]);
+  }, [activeId, messages, isGuest]);
 
   const createNewConversation = useCallback(() => {
     // Frontend-only draft: no backend row is created until the user sends
     // their first message. Repeated/rapid clicks reuse the same draft.
+    if (isGuest) return;
     setInputText("");
     setMessages([]);
     setActiveId(null);
-  }, []);
+  }, [isGuest]);
 
   const SUGGESTIONS = [
     {
@@ -236,6 +300,142 @@ export default function AppChat() {
     }
     const content = text.trim();
     if (!content || sending) return;
+
+    // ── GUEST MODE ─────────────────────────────────────────────────────────
+    // No database: the single conversation and the 100k-token budget live in
+    // localStorage. When the budget is spent, trying to add a new message
+    // opens the sign-in prompt instead of sending.
+    if (isGuest) {
+      const gs = guestState;
+      if (!gs) return;
+      if (gs.tokensUsed >= GUEST_BUDGET) {
+        setGuestWidgetOpen(true);
+        return;
+      }
+      setInputText("");
+      setSendError(null);
+      setSending(true);
+      sendingRef.current = true;
+      setStreamingKey(null);
+      setAssistantActivities([]);
+      setStreamingText("");
+      setAssistantError(false);
+      assistantActivitiesRef.current = [];
+      streamingTextRef.current = "";
+
+      const guestId = gs.conversation.id;
+      const tempId = `temp-${Date.now()}`;
+      const tempAiId = `temp-ai-${Date.now()}`;
+      const created = new Date().toISOString();
+      const tempMsg: Message = {
+        id: tempId, conversation_id: guestId, role: "user", type: "message",
+        content, content_json: null, tokens_input: 0, tokens_output: 0,
+        model_used: null, created_at: created,
+      };
+      const tempAi: Message = {
+        id: tempAiId, conversation_id: guestId, role: "assistant", type: "message",
+        content: "", content_json: null, tokens_input: 0, tokens_output: 0,
+        model_used: null, created_at: created,
+      };
+      setMessages((prev) => [...prev, tempMsg, tempAi]);
+      setStreamingKey(tempAiId);
+
+      try {
+        await chatApi.guestStream(guestId, content, {
+          onActivity: (act) => {
+            assistantActivitiesRef.current = mergeActivity(assistantActivitiesRef.current, act);
+            setAssistantActivities(assistantActivitiesRef.current);
+          },
+          onToken: (chunk) => {
+            streamingTextRef.current += chunk;
+            setStreamingText(streamingTextRef.current);
+          },
+          onFinal: (resp) => {
+            const realUser: Message = { ...tempMsg, id: tempId };
+            const realAi: Message = {
+              id: tempAiId, conversation_id: guestId, role: "assistant",
+              type: resp.type || "message", content: resp.content,
+              content_json: resp.content_json, tokens_input: resp.tokens_input,
+              tokens_output: resp.tokens_output, model_used: resp.model_used,
+              created_at: created,
+              activities: assistantActivitiesRef.current.map((a) => ({ ...a })),
+            };
+            setMessages((prev) => [
+              ...prev.filter((m) => m.id !== tempId && m.id !== tempAiId),
+              realUser, realAi,
+            ]);
+            setGuestState((prev) => {
+              if (!prev) return prev;
+              const title =
+                prev.conversation.title && prev.conversation.title !== "Nouvelle consultation"
+                  ? prev.conversation.title
+                  : (summarizeTitle(content) || "Nouvelle consultation");
+              const next: GuestState = {
+                conversation: { ...prev.conversation, title },
+                messages: [
+                  ...prev.messages.filter((m) => m.id !== tempId && m.id !== tempAiId),
+                  realUser, realAi,
+                ],
+                tokensUsed:
+                  prev.tokensUsed + (resp.tokens_input ?? 0) + (resp.tokens_output ?? 0),
+              };
+              writeGuestState(next);
+              return next;
+            });
+          },
+        });
+      } catch (error) {
+        const status = error instanceof ApiError ? error.status : 0;
+        const hadPartial =
+          streamingTextRef.current.trim().length > 0 || assistantActivitiesRef.current.length > 0;
+        if (!hadPartial && status !== 402 && status !== 429) {
+          setMessages((prev) => prev.filter((m) => m.id !== tempId && m.id !== tempAiId));
+          setInputText(content);
+          setSendError(
+            error instanceof ApiError
+              ? error.detail
+              : "Le service de consultation ne répond pas. Veuillez réessayer."
+          );
+        } else {
+          setAssistantError(true);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempAiId
+                ? {
+                    ...m,
+                    content: streamingTextRef.current,
+                    activities: assistantActivitiesRef.current.map((a) => ({ ...a })),
+                  }
+                : m
+            )
+          );
+          const finalize = (prev: GuestState | null): GuestState | null => {
+            if (!prev) return prev;
+            const next: GuestState = {
+              ...prev,
+              messages: prev.messages.map((m) =>
+                m.id === tempAiId
+                  ? {
+                      ...m,
+                      content: streamingTextRef.current,
+                      activities: assistantActivitiesRef.current.map((a) => ({ ...a })),
+                    }
+                  : m
+              ),
+            };
+            writeGuestState(next);
+            return next;
+          };
+          setGuestState(finalize);
+        }
+      } finally {
+        setStreamingKey(null);
+        sendingRef.current = false;
+        setSending(false);
+      }
+      return;
+    }
+
     setInputText("");
     setSendError(null);
     setSending(true);
@@ -370,7 +570,7 @@ export default function AppChat() {
       sendingRef.current = false;
       setSending(false);
     }
-  }, [activeId, sending, refreshUsage]);
+  }, [activeId, sending, refreshUsage, isGuest, guestState]);
 
   const sendMessage = useCallback(() => {
     const t = inputText.trim();
@@ -432,7 +632,9 @@ export default function AppChat() {
   // Use live search results when the user typed something; otherwise the
   // full conversation list (already client-side stable after loading).
   const filteredConvs = searchResults ?? conversations;
-  const activeConv = conversations.find((c) => c.id === activeId);
+  const guestConv = isGuest && guestState ? convFromGuest(guestState) : null;
+  const activeConv = guestConv ?? conversations.find((c) => c.id === activeId);
+  const sidebarConvs = guestConv ? [guestConv] : filteredConvs;
 
   return (
     <div className={`app-shell${isMobile ? " is-mobile" : ""}${sidebarOpen ? " sidebar-open" : ""}`}>
@@ -448,10 +650,12 @@ export default function AppChat() {
           </button>
         </div>
         <div className="sidebar-actions">
-          <button className="btn btn-gold" type="button" onClick={createNewConversation}>
-            <Plus size={16} strokeWidth={1.75} />
-            Nouvelle discussion
-          </button>
+          {!isGuest && (
+            <button className="btn btn-gold" type="button" onClick={createNewConversation}>
+              <Plus size={16} strokeWidth={1.75} />
+              Nouvelle discussion
+            </button>
+          )}
         </div>
         <div className="sidebar-search">
           <span className="sidebar-search-icon"><Search size={16} strokeWidth={1.75} /></span>
@@ -460,7 +664,7 @@ export default function AppChat() {
         </div>
 
         <div className="sidebar-list">
-          {filteredConvs.map((conv) =>
+          {sidebarConvs.map((conv) =>
             renamingId === conv.id ? (
               <form key={conv.id} className="sidebar-item sidebar-rename-form"
                 onSubmit={(e) => { e.preventDefault(); submitRename(); }}
@@ -500,13 +704,13 @@ export default function AppChat() {
               </div>
             )
           )}
-          {filteredConvs.length === 0 && (
+          {sidebarConvs.length === 0 && (
             <p style={{ padding: "8px 12px", opacity: 0.5, fontSize: 13 }}>Aucune conversation</p>
           )}
         </div>
 
         <div className="sidebar-footer">
-          {usage.plan !== "pro" && (
+          {!isGuest && usage.plan !== "pro" && (
             <Link href="/pricing" className="pro-badge">
               <Zap size={14} strokeWidth={1.75} /> Passer à Pro
             </Link>
@@ -534,6 +738,11 @@ export default function AppChat() {
             <div className="guest-row">
               <Link href="/login" className="login-chip">Se connecter</Link>
               <div className="sidebar-controls"><ThemeToggle /></div>
+            </div>
+          )}
+          {isGuest && guestState && (
+            <div className="guest-tokens">
+              <span>Invitation — {guestState.tokensUsed.toLocaleString("fr-DZ")} / {GUEST_BUDGET.toLocaleString("fr-DZ")} tokens</span>
             </div>
           )}
         </div>
@@ -680,6 +889,31 @@ export default function AppChat() {
           </div>
         </div>
       </main>
+
+      {guestWidgetOpen && (
+        <div className="limit-overlay" role="dialog" aria-modal="true" aria-labelledby="guest-widget-title"
+          onClick={() => setGuestWidgetOpen(false)}>
+          <div className="limit-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="limit-close" type="button" aria-label="Fermer"
+              onClick={() => setGuestWidgetOpen(false)}>
+              <X size={18} strokeWidth={1.75} />
+            </button>
+            <div className="limit-icon"><Zap size={22} strokeWidth={1.75} /></div>
+            <h2 id="guest-widget-title">Connectez-vous pour continuer</h2>
+            <p>
+              En mode invité, vous disposez de {GUEST_BUDGET.toLocaleString("fr-DZ")} tokens
+              et d&rsquo;une seule discussion. Connectez-vous ou créez un compte pour
+              conserver vos échanges et continuer avec votre quota.
+            </p>
+            <Link href="/login?next=/app" className="btn btn-gold" style={{ width: "100%" }}>
+              Se connecter
+            </Link>
+            <button className="limit-later" type="button" onClick={() => setGuestWidgetOpen(false)}>
+              Continuer en invité
+            </button>
+          </div>
+        </div>
+      )}
 
       {showLimitModal && (
         <div className="limit-overlay" role="dialog" aria-modal="true" aria-labelledby="limit-title"
