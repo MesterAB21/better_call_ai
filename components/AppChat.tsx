@@ -128,14 +128,19 @@ export default function AppChat() {
     let cancelled = false;
     (async () => {
       try {
+        const toImport = store.messages.map((m) => {
+          const raw = m.content as unknown;
+          const isStruct = typeof raw === "object" && raw !== null && !Array.isArray(raw);
+          return {
+            role: m.role,
+            content: isStruct ? JSON.stringify(raw) : String(raw),
+            type: m.type,
+            content_json: isStruct ? (raw as Record<string, unknown>) : m.content_json,
+          };
+        });
         const conv = await conversationsApi.importConversation(
           store.conversation.title || undefined,
-          store.messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-            type: m.type,
-            content_json: m.content_json,
-          }))
+          toImport
         );
         if (cancelled) return;
         clearGuestState();
@@ -902,7 +907,10 @@ export default function AppChat() {
             <h2 id="guest-widget-title">Connectez-vous pour continuer</h2>
             <p>
               En tant qu&rsquo;invité, vous disposez d&rsquo;une seule discussion.
-              Connectez-vous ou créez un compte pour conserver vos échanges,
+              {messages.length > 0 && (
+                <> Votre conversation actuelle sera automatiquement transférée dans votre compte.</>
+              )}
+              {" "}Connectez-vous ou créez un compte pour conserver vos échanges,
               créer de nouvelles consultations et continuer avec votre quota.
             </p>
             <Link href="/login?next=/app" className="btn btn-gold" style={{ width: "100%" }}>
