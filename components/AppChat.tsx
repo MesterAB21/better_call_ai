@@ -821,7 +821,9 @@ export default function AppChat() {
                       }
                       return (
                         <div className="ai-body t-body">
-                          {m.content && <Markdown>{m.content}</Markdown>}
+                          {typeof m.content === "string" && m.content && (
+                            <Markdown>{m.content}</Markdown>
+                          )}
                           {m.id.startsWith("temp-ai") && assistantError && (
                             <p className="ai-error">L&rsquo;exécution a été interrompue.</p>
                           )}

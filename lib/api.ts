@@ -257,12 +257,23 @@ export function optionsOf(q: QuestionnaireQuestion): QuestionnaireOption[] {
 }
 
 /** Extracts a structured questionnaire from a stored message, if present. */
-export function questionnaireOf(m: Pick<Message, "type" | "content_json">): Questionnaire | null {
+export function questionnaireOf(
+  m: Pick<Message, "type" | "content_json" | "content">
+): Questionnaire | null {
   const cj = m.content_json;
-  if (!cj || !Array.isArray(cj.questions) || cj.questions.length === 0) {
-    return null;
+  if (cj && Array.isArray(cj.questions) && cj.questions.length > 0) {
+    return cj as unknown as Questionnaire;
   }
-  return cj as unknown as Questionnaire;
+  // A questionnaire can arrive inside `content` instead (the backend now moves
+  // it to `content_json`, but older messages or direct agents may not).
+  const raw = m.content;
+  if (raw && typeof raw === "object") {
+    const maybe = raw as unknown as { questions?: unknown };
+    if (Array.isArray(maybe.questions) && maybe.questions.length > 0) {
+      return raw as unknown as Questionnaire;
+    }
+  }
+  return null;
 }
 
 /**
