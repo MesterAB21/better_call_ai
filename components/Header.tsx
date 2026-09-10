@@ -26,7 +26,7 @@ export default function Header() {
               </Link>
             ) : (
               <Link href="/login" className="btn btn-gold">
-                Commencer <ArrowRight size={15} strokeWidth={2} aria-hidden="true" />
+                Se connecter <ArrowRight size={15} strokeWidth={2} aria-hidden="true" />
               </Link>
             )
           )}
