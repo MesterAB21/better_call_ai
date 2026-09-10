@@ -261,9 +261,14 @@ export default function AppChat() {
   }, [activeId, messages, isGuest]);
 
   const createNewConversation = useCallback(() => {
+    if (isGuest) {
+      // A visitor has exactly one local conversation — signing in is the path
+      // to create more, so the button prompts instead.
+      setGuestWidgetOpen(true);
+      return;
+    }
     // Frontend-only draft: no backend row is created until the user sends
     // their first message. Repeated/rapid clicks reuse the same draft.
-    if (isGuest) return;
     setInputText("");
     setMessages([]);
     setActiveId(null);
@@ -650,12 +655,10 @@ export default function AppChat() {
           </button>
         </div>
         <div className="sidebar-actions">
-          {!isGuest && (
-            <button className="btn btn-gold" type="button" onClick={createNewConversation}>
-              <Plus size={16} strokeWidth={1.75} />
-              Nouvelle discussion
-            </button>
-          )}
+          <button className="btn btn-gold" type="button" onClick={createNewConversation}>
+            <Plus size={16} strokeWidth={1.75} />
+            Nouvelle discussion
+          </button>
         </div>
         <div className="sidebar-search">
           <span className="sidebar-search-icon"><Search size={16} strokeWidth={1.75} /></span>
@@ -738,11 +741,6 @@ export default function AppChat() {
             <div className="guest-row">
               <Link href="/login" className="login-chip">Se connecter</Link>
               <div className="sidebar-controls"><ThemeToggle /></div>
-            </div>
-          )}
-          {isGuest && guestState && (
-            <div className="guest-tokens">
-              <span>Invitation — {guestState.tokensUsed.toLocaleString("fr-DZ")} / {GUEST_BUDGET.toLocaleString("fr-DZ")} tokens</span>
             </div>
           )}
         </div>
@@ -901,9 +899,9 @@ export default function AppChat() {
             <div className="limit-icon"><Zap size={22} strokeWidth={1.75} /></div>
             <h2 id="guest-widget-title">Connectez-vous pour continuer</h2>
             <p>
-              En mode invité, vous disposez de {GUEST_BUDGET.toLocaleString("fr-DZ")} tokens
-              et d&rsquo;une seule discussion. Connectez-vous ou créez un compte pour
-              conserver vos échanges et continuer avec votre quota.
+              En tant qu&rsquo;invité, vous disposez d&rsquo;une seule discussion.
+              Connectez-vous ou créez un compte pour conserver vos échanges,
+              créer de nouvelles consultations et continuer avec votre quota.
             </p>
             <Link href="/login?next=/app" className="btn btn-gold" style={{ width: "100%" }}>
               Se connecter
