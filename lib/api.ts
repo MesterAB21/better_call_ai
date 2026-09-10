@@ -37,7 +37,11 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
     let detail = `HTTP ${res.status}`;
     try {
       const json = await res.json();
-      detail = json.detail ?? detail;
+      if (json.detail) {
+        // FastAPI validation errors carry an ARRAY of detail objects — never
+        // let raw objects reach the UI (they crash React rendering).
+        detail = typeof json.detail === "string" ? json.detail : JSON.stringify(json.detail);
+      }
     } catch {}
     throw new ApiError(res.status, detail);
   }
@@ -402,7 +406,11 @@ export function parseStreamBlock(
   }
   if (type === "final") {
     const obj = payload.response ?? payload.result ?? (payload as Partial<ChatResponse>);
-    if (obj && obj.assistant_message_id) {
+    // Guest streams carry empty user/assistant ids (nothing is persisted), so a
+    // final must not be dropped just because the ids are missing — the answer
+    // content and token counters ride on this event.
+    const hasContent = obj && (obj.content !== undefined || obj.content_json !== undefined);
+    if (obj && (obj.assistant_message_id || hasContent)) {
       state.final = {
         conversation_id: obj.conversation_id ?? conversationId ?? "",
         user_message_id: obj.user_message_id ?? "",
@@ -478,14 +486,18 @@ async function streamRequest(
       "Content-Type": "application/json",
       Accept: "text/event-stream",
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, conversation_id }),
   });
 
   if (!res.ok) {
     let detail = `HTTP ${res.status}`;
     try {
       const json = await res.json();
-      detail = json.detail ?? detail;
+      if (json.detail) {
+        // FastAPI validation errors carry an ARRAY of detail objects — never
+        // let raw objects reach the UI (they crash React rendering).
+        detail = typeof json.detail === "string" ? json.detail : JSON.stringify(json.detail);
+      }
     } catch {}
     throw new ApiError(res.status, detail);
   }
