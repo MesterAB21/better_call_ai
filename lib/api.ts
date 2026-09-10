@@ -166,11 +166,12 @@ export const conversationsApi = {
   /** Restores a browser-local (guest) conversation into the account. */
   importConversation: (
     title: string | undefined,
-    messages: { role: "user" | "assistant"; content: string; type?: string; content_json?: Record<string, unknown> | null }[]
+    messages: { role: "user" | "assistant"; content: string; type?: string; content_json?: Record<string, unknown> | null }[],
+    id?: string
   ) =>
     request<Conversation>("/conversations/import", {
       method: "POST",
-      body: { title, messages },
+      body: { id, title, messages },
     }),
 };
 

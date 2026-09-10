@@ -24,6 +24,8 @@ import {
   writeGuestState, type GuestState,
 } from "@/lib/guest-store";
 
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export default function AppChat() {
   const { user, loading: authLoading, logout } = useAuth();
   const isGuest = !user && !authLoading;
@@ -140,7 +142,8 @@ export default function AppChat() {
         });
         const conv = await conversationsApi.importConversation(
           store.conversation.title || undefined,
-          toImport
+          toImport,
+          UUID_V4_RE.test(store.conversation.id) ? store.conversation.id : undefined
         );
         if (cancelled) return;
         clearGuestState();
